@@ -1,5 +1,5 @@
 ---
-name: imessage-kit-pro
+name: imessage
 description: >
   Comprehensive guide for building iMessage applications using @photon-ai/imessage-kit (Basic)
   and @photon-ai/advanced-imessage-kit (Advanced). Use when developing iMessage automation,
