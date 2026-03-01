@@ -83,12 +83,11 @@ await sdk.connect();
 
 ---
 
-## Best Practices (Both Kits)
+## Best Practices
 
-- **Graceful Shutdown:** Always close connections to release resources. `await sdk.close()` for both kits. For schedulers/reminders in the Basic Kit, call `destroy()`.
-- **Prevent Reply Loops:** When making a bot, check if a message is from you before replying. The Basic Kit has `.ifFromOthers()`. In the Advanced Kit, check `if (message.isFromMe) return;`.
-- **Use Absolute Paths:** Always use absolute file paths for attachments (e.g., `/Users/me/file.pdf`) to avoid errors.
-- **Error Handling:** Wrap all SDK calls in `try...catch` blocks to handle potential network or file system failures gracefully.
+For guidelines on building robust, secure, and efficient applications, refer to the dedicated best practices document:
+
+- **Read `best-practices.md`**
 
 ---
 
