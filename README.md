@@ -1,10 +1,10 @@
-# Photon HQ Skills
+# iMessage Kit Pro - AI Agent Skill
 
-This repository serves as a central collection of official skills for AI agents developed by the Photon HQ team. Each skill provides specialized knowledge and capabilities to help agents perform a variety of tasks more effectively.
+This repository contains the official AI agent skill for building iMessage applications and automations with `@photon-ai/imessage-kit` and `@photon-ai/advanced-imessage-kit`.
 
 ## Available Skills
 
-This repository is structured as a multi-skill repository. Each skill resides in its own subdirectory within the `skills/` folder.
+This repository is structured to house multiple skills, each in its own subdirectory within the `skills/` folder.
 
 | Skill | Description |
 | :--- | :--- |
@@ -12,18 +12,20 @@ This repository is structured as a multi-skill repository. Each skill resides in
 
 ## Installation
 
-To install a specific skill from this repository, use the `skills` CLI with the `--skill` flag.
+To install a specific skill from this repository, use the `skills` CLI.
 
 ### Install the iMessage Skill
+
+Use the `--skill` flag to target the `imessage` skill directly.
 
 ```bash
 npx skills add photon-hq/skills --skill imessage
 ```
 
-This command will clone the `photon-hq/skills` repository and specifically install the `imessage` skill, making it available to your AI agent.
+Alternatively, you can use the `@` shorthand syntax:
 
-## How It Works
+```bash
+npx skills add photon-hq/skills@imessage
+```
 
-The `skills` CLI is designed to support multi-skill repositories. When you use the `--skill` flag, it looks for a subdirectory with a matching name inside the `skills/` folder and installs the `SKILL.md` found there.
-
-This structure allows us to maintain a single, organized repository for all our official skills, while allowing users to install only the ones they need.
+This command installs the `imessage` skill, making its full knowledge base available to your AI agent for building iMessage bots, automations, and integrations.
