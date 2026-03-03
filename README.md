@@ -6,7 +6,7 @@ Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs.
 
 | Skill | Package(s) | What it covers |
 | :--- | :--- | :--- |
-| [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Every method, type, event, and pattern for iMessage automation — from simple bots to enterprise agents. |
+| [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Full API reference for both kits — send messages, react to events, manage groups, schedule reminders, and build production agents on Photon's infrastructure. |
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connecting the Vercel AI SDK to iMessage. Local and remote modes, all adapter methods, message types, and webhook payloads. |
 
 ## Install
