@@ -7,10 +7,10 @@ description: >
 license: MIT
 metadata:
   author: photon-hq
-  version: '6.0.0'
+  version: '7.0.0'
 ---
 
-# iMessage Automation Skill (Final Exhaustive Edition)
+# iMessage Skill
 
 This skill provides a complete, source-accurate reference for building iMessage applications using both the Basic (`@photon-ai/imessage-kit`) and Advanced (`@photon-ai/advanced-imessage-kit`) libraries. It is designed to be exhaustive, covering every exported method, type, option, and real-world usage pattern.
 
@@ -37,6 +37,81 @@ First, help the user choose the right tool for the job. Use the table below to g
 | **Advanced** | Scheduled messages, simple auto-reply | **Typing indicators, FaceTime links, Find My friends, focus status** |
 
 **Recommendation:** For quick scripts or personal projects, start with the **Basic Kit**. For complex, real-time applications requiring advanced features, use the **Advanced Kit**.
+
+---
+
+## Setup & Installation
+
+### Basic Kit
+
+Install the package:
+
+```bash
+# Bun (recommended — zero dependencies)
+bun add @photon-ai/imessage-kit
+
+# Node.js (requires better-sqlite3)
+npm install @photon-ai/imessage-kit better-sqlite3
+```
+
+Grant **Full Disk Access** so the SDK can read the iMessage database:
+
+1. Open **System Settings > Privacy & Security > Full Disk Access**
+2. Click **"+"** and add your IDE or terminal (e.g., Cursor, VS Code, Terminal, Warp)
+3. **Restart** the IDE/terminal after granting permission
+
+Verify the setup:
+
+```typescript
+import { IMessageSDK } from '@photon-ai/imessage-kit';
+
+const sdk = new IMessageSDK({ debug: true });
+
+try {
+  await sdk.send('+1234567890', 'Hello from iMessage Kit!');
+} finally {
+  await sdk.close();
+}
+```
+
+### Advanced Kit
+
+Install the package:
+
+```bash
+npm install @photon-ai/advanced-imessage-kit
+# or
+bun add @photon-ai/advanced-imessage-kit
+```
+
+The Advanced Kit connects to Photon's managed server infrastructure. Assume the server is already running with an API key and endpoint provided by Photon.
+
+Verify the setup:
+
+```typescript
+import { SDK } from '@photon-ai/advanced-imessage-kit';
+
+const sdk = SDK({
+  serverUrl: 'http://localhost:1234',
+  apiKey: 'your-api-key',
+  logLevel: 'info'
+});
+
+await sdk.connect();
+
+sdk.on('ready', async () => {
+  await sdk.messages.sendMessage({
+    chatGuid: 'iMessage;-;+1234567890',
+    message: 'Hello from Advanced Kit!'
+  });
+});
+
+sdk.on('error', (error) => {
+  console.error('SDK error:', error);
+});
+
+await sdk.close();
+```
 
 ---
 
@@ -91,10 +166,10 @@ import { IMessageSDK } from '@photon-ai/imessage-kit';
 await using sdk = new IMessageSDK();
 
 // Send a simple text message
-await sdk.send('+15551234567', 'Hello from the Basic Kit!');
+await sdk.send('+1234567890', 'Hello from the Basic Kit!');
 
 // Send a message with an image and a file
-const result = await sdk.send('+15551234567', {
+const result = await sdk.send('+1234567890', {
     text: 'Project assets attached.',
     images: ['/path/to/chart.png'],
     files: ['/path/to/report.pdf']
@@ -127,19 +202,19 @@ for (const result of results) {
 
 ```typescript
 // sdk.sendText(to, text)
-await sdk.sendText('+15551234567', 'This is a text message.');
+await sdk.sendText('+1234567890', 'This is a text message.');
 
 // sdk.sendImage(to, imagePath, text?)
-await sdk.sendImage('+15551234567', '/path/to/logo.png', 'Here is our logo.');
+await sdk.sendImage('+1234567890', '/path/to/logo.png', 'Here is our logo.');
 
 // sdk.sendImages(to, imagePaths, text?)
-await sdk.sendImages('+15551234567', ['/path/to/img1.jpg', '/path/to/img2.jpg']);
+await sdk.sendImages('+1234567890', ['/path/to/img1.jpg', '/path/to/img2.jpg']);
 
 // sdk.sendFile(to, filePath, text?)
-await sdk.sendFile('+15551234567', '/path/to/invoice.pdf');
+await sdk.sendFile('+1234567890', '/path/to/invoice.pdf');
 
 // sdk.sendFiles(to, filePaths, text?)
-await sdk.sendFiles('+15551234567', ['/path/to/data.csv', '/path/to/notes.txt']);
+await sdk.sendFiles('+1234567890', ['/path/to/data.csv', '/path/to/notes.txt']);
 ```
 
 ### Querying Data
@@ -231,7 +306,7 @@ const scheduler = new MessageScheduler(sdk);
 
 // Schedule a daily good morning message
 scheduler.scheduleRecurring({
-    to: '+15551234567',
+    to: '+1234567890',
     content: 'Good morning! ☀️',
     interval: 'daily',
     startAt: new Date('2024-01-01T08:00:00')
@@ -239,7 +314,7 @@ scheduler.scheduleRecurring({
 
 // Schedule a one-time reminder
 const reminderId = scheduler.schedule({
-    to: '+15551234567',
+    to: '+1234567890',
     content: 'Meeting in 15 minutes.',
     sendAt: new Date(Date.now() + 15 * 60 * 1000)
 });
@@ -258,8 +333,8 @@ For natural language, human-friendly reminders.
 import { Reminders } from '@photon-ai/imessage-kit';
 const reminders = new Reminders(sdk);
 
-reminders.in('5 minutes', '+15551234567', 'Break time!');
-reminders.at('tomorrow at 9:15am', '+15551234567', 'Team standup.');
+reminders.in('5 minutes', '+1234567890', 'Break time!');
+reminders.at('tomorrow at 9:15am', '+1234567890', 'Team standup.');
 
 reminders.destroy(); // IMPORTANT: Clean up on shutdown
 ```
@@ -276,7 +351,8 @@ import { SDK, ClientConfig } from '@photon-ai/advanced-imessage-kit';
 const config: ClientConfig = {
   serverUrl: 'http://localhost:1234', // Your server URL from Photon
   apiKey: 'your-secret-api-key',
-  logLevel: 'info'
+  logLevel: 'info', // 'debug' | 'info' | 'warn' | 'error'
+  logToFile: true   // Write logs to ~/Library/Logs/AdvancedIMessageKit (default: true)
 };
 
 const sdk = SDK(config);
@@ -302,22 +378,107 @@ process.on('SIGINT', async () => {
 
 Listen to events to build interactive applications.
 
+#### Connection Events
+
 ```typescript
-// Listen for new messages
+sdk.on('ready', () => {
+  console.log('SDK connected and ready');
+});
+
+sdk.on('disconnect', () => {
+  console.log('Disconnected');
+});
+
+sdk.on('error', (error) => {
+  console.error('Error:', error);
+});
+```
+
+#### Message Events
+
+```typescript
 sdk.on('new-message', (message) => {
   console.log(`New message from ${message.handle?.address}: ${message.text}`);
 });
 
-// Listen for typing indicators
-sdk.on('typing-indicator', (data) => {
-  const status = data.display ? 'is typing' : 'stopped typing';
-  console.log(`Someone ${status} in chat ${data.guid}`);
+sdk.on('updated-message', (message) => {
+  if (message.dateRead) console.log('Message read');
+  else if (message.dateDelivered) console.log('Message delivered');
 });
 
-// Listen for group chat changes
-sdk.on('participant-added', (data) => {
-  console.log(`Someone was added to group ${data.guid}`);
+sdk.on('message-send-error', (data) => {
+  console.error('Send failed:', data);
 });
+```
+
+#### Chat Events
+
+```typescript
+sdk.on('typing-indicator', ({ display, guid }) => {
+  console.log(`${guid} ${display ? 'is typing' : 'stopped typing'}`);
+});
+
+sdk.on('chat-read-status-changed', ({ chatGuid, read }) => {
+  console.log(`Chat ${chatGuid} marked as ${read ? 'read' : 'unread'}`);
+});
+```
+
+#### Group Events
+
+```typescript
+sdk.on('group-name-change', (message) => {
+  console.log('Group renamed to:', message.groupTitle);
+});
+
+sdk.on('participant-added', (message) => {
+  console.log('Someone joined the group');
+});
+
+sdk.on('participant-removed', (message) => {
+  console.log('Someone was removed from the group');
+});
+
+sdk.on('participant-left', (message) => {
+  console.log('Someone left the group');
+});
+
+sdk.on('group-icon-changed', (message) => {
+  console.log('Group icon changed');
+});
+
+sdk.on('group-icon-removed', (message) => {
+  console.log('Group icon removed');
+});
+```
+
+#### Find My Events
+
+```typescript
+sdk.on('new-findmy-location', (location) => {
+  console.log(`${location.handle} location updated:`, location.coordinates);
+});
+```
+
+#### Removing Event Listeners
+
+```typescript
+const handler = (message) => console.log(message);
+sdk.on('new-message', handler);
+
+sdk.off('new-message', handler);
+sdk.removeAllListeners('new-message');
+```
+
+#### Message Deduplication
+
+The SDK includes built-in deduplication to prevent processing duplicate messages during network instability:
+
+```typescript
+// Clear processed messages cache to prevent memory leaks in long-running agents
+sdk.clearProcessedMessages(1000);
+
+// Check how many messages have been processed
+const count = sdk.getProcessedMessageCount();
 ```
 
 ### Messages (`sdk.messages`)
@@ -325,21 +486,21 @@ sdk.on('participant-added', (data) => {
 ```typescript
 // Send a message with a 'slam' effect
 await sdk.messages.sendMessage({
-  chatGuid: 'iMessage;-;+15551234567',
+  chatGuid: 'iMessage;-;+1234567890',
   message: 'This is important!',
   effectId: 'com.apple.MobileSMS.expressivesend.impact'
 });
 
 // Send a reply to a specific message
 await sdk.messages.sendMessage({
-  chatGuid: 'iMessage;-;+15551234567',
+  chatGuid: 'iMessage;-;+1234567890',
   message: 'This is a reply.',
   selectedMessageGuid: 'E3A2-..-..'
 });
 
 // Send a 'love' tapback
 await sdk.messages.sendReaction({
-  chatGuid: 'iMessage;-;+15551234567',
+  chatGuid: 'iMessage;-;+1234567890',
   messageGuid: 'E3A2-..-..',
   reaction: 'love'
 });
@@ -356,43 +517,183 @@ await sdk.messages.unsendMessage({ messageGuid: 'E3A2-..-..' });
 
 ### Attachments (`sdk.attachments`)
 
+#### Sending Attachments
+
 ```typescript
 // Send a local file
 await sdk.attachments.sendAttachment({
-  chatGuid: 'iMessage;-;+15551234567',
-  filePath: '/path/to/local/file.pdf'
+  chatGuid: 'iMessage;-;+1234567890',
+  filePath: '/path/to/local/file.pdf',
+  fileName: 'custom-name.pdf' // Optional
 });
 
-// Send a sticker attached to a message
-await sdk.attachments.sendSticker({
-  chatGuid: 'iMessage;-;+15551234567',
-  filePath: '/path/to/sticker.png',
-  selectedMessageGuid: 'E3A2-..-..',
-  stickerX: 0.5, // Center horizontally
-  stickerY: 0.5  // Center vertically
+// Send an audio/voice message
+await sdk.attachments.sendAttachment({
+  chatGuid: 'iMessage;-;+1234567890',
+  filePath: '/path/to/audio.m4a',
+  isAudioMessage: true
 });
 ```
 
-### Group Chats (`sdk.chats`)
+#### Sending Stickers
+
+```typescript
+// Standalone sticker (sent as its own message)
+await sdk.attachments.sendSticker({
+  chatGuid: 'iMessage;-;+1234567890',
+  filePath: '/path/to/sticker.png'
+});
+
+// Reply sticker (attached to an existing message bubble)
+await sdk.attachments.sendSticker({
+  chatGuid: 'iMessage;-;+1234567890',
+  filePath: '/path/to/sticker.png',
+  selectedMessageGuid: 'target-message-guid',
+  stickerX: 0.5,       // Position X (0-1), default: 0.5
+  stickerY: 0.5,       // Position Y (0-1), default: 0.5
+  stickerScale: 0.75,  // Scale (0-1), default: 0.75
+  stickerRotation: 0,  // Rotation in radians, default: 0
+  stickerWidth: 300     // Width in pixels, default: 300
+});
+```
+
+#### Querying and Downloading Attachments
+
+```typescript
+// Get attachment details
+const attachment = await sdk.attachments.getAttachment('attachment-guid');
+
+// Get total attachment count
+const count = await sdk.attachments.getAttachmentCount();
+
+// Download an attachment
+const buffer = await sdk.attachments.downloadAttachment('attachment-guid', {
+  original: true,   // Download the original file
+  force: false,      // Force re-download
+  width: 800,        // Image width (for thumbnails)
+  height: 600,       // Image height
+  quality: 80        // Image quality
+});
+
+// Download Live Photo video component
+const liveBuffer = await sdk.attachments.downloadAttachmentLive('attachment-guid');
+
+// Get blurhash placeholder string
+const blurhash = await sdk.attachments.getAttachmentBlurhash('attachment-guid');
+```
+
+### Chats (`sdk.chats`)
+
+#### Listing and Querying Chats
+
+```typescript
+// List chats with filtering
+const chats = await sdk.chats.getChats({
+  withLastMessage: true,
+  withArchived: false,
+  offset: 0,
+  limit: 50
+});
+
+// Get chat count
+const count = await sdk.chats.getChatCount();
+
+// Get a single chat with related data
+const chat = await sdk.chats.getChat('chat-guid', {
+  with: ['participants', 'lastMessage']
+});
+
+// Get messages for a specific chat
+const messages = await sdk.chats.getChatMessages('chat-guid', {
+  limit: 100,
+  offset: 0,
+  sort: 'DESC',
+  before: Date.now(),
+  after: Date.now() - 86400000
+});
+```
+
+#### Creating and Managing Group Chats
 
 ```typescript
 // Create a new group chat
 const newChat = await sdk.chats.createChat({
-  addresses: ['+15551112222', '+15553334444'],
-  message: 'Welcome to the new group!'
+  addresses: ['+1111111111', '+2222222222'],
+  message: 'Welcome to the new group!',
+  service: 'iMessage',
+  method: 'private-api'
 });
 console.log('Created group chat:', newChat.guid);
 
 // Add a participant to the new group
-await sdk.chats.addParticipant(newChat.guid, '+15555556666');
+await sdk.chats.addParticipant(newChat.guid, '+3333333333');
+
+// Remove a participant
+await sdk.chats.removeParticipant(newChat.guid, '+3333333333');
 
 // Rename the group
 await sdk.chats.updateChat(newChat.guid, { displayName: 'Project Phoenix Team' });
 
-// Start typing in a chat
-await sdk.chats.startTyping(newChat.guid);
-// ... send a message ...
-await sdk.chats.stopTyping(newChat.guid);
+// Leave a group chat
+await sdk.chats.leaveChat(newChat.guid);
+```
+
+#### Chat Status
+
+```typescript
+// Mark chat as read/unread
+await sdk.chats.markChatRead('chat-guid');
+await sdk.chats.markChatUnread('chat-guid');
+
+// Delete a chat
+await sdk.chats.deleteChat('chat-guid');
+```
+
+#### Typing Indicators
+
+```typescript
+await sdk.chats.startTyping('chat-guid');
+// ... perform work, then send message ...
+await sdk.chats.stopTyping('chat-guid');
+```
+
+#### Group Icon
+
+```typescript
+// Set group icon from a local image
+await sdk.chats.setGroupIcon('chat-guid', '/path/to/image.jpg');
+
+// Get the group icon as a buffer
+const iconBuffer = await sdk.chats.getGroupIcon('chat-guid');
+
+// Remove the group icon
+await sdk.chats.removeGroupIcon('chat-guid');
+```
+
+#### Chat Background
+
+```typescript
+// Get current background info
+const bgInfo = await sdk.chats.getBackground('chat-guid');
+if (bgInfo.hasBackground) {
+  console.log(`Background ID: ${bgInfo.backgroundId}`);
+  console.log(`Image URL: ${bgInfo.imageUrl}`);
+}
+
+// Set a background image from a file path
+await sdk.chats.setBackground('chat-guid', {
+  filePath: '/path/to/image.png'
+});
+
+// Set a background image from base64 data
+import fs from 'node:fs';
+const imageBuffer = fs.readFileSync('/path/to/image.png');
+await sdk.chats.setBackground('chat-guid', {
+  fileData: imageBuffer.toString('base64')
+});
+
+// Remove the background
+await sdk.chats.removeBackground('chat-guid');
 ```
 
 ### Polls (`sdk.polls`)
@@ -400,35 +701,205 @@ await sdk.chats.stopTyping(newChat.guid);
 ```typescript
 // Create a poll
 const pollMessage = await sdk.polls.create({
-  chatGuid: 'iMessage;-;+15551234567',
+  chatGuid: 'iMessage;-;+1234567890',
+  title: 'What should we do?',
   options: ['Option A', 'Option B', 'Option C']
 });
 
-// Later, vote in the poll
+// Vote on a poll option
 await sdk.polls.vote({
-  chatGuid: 'iMessage;-;+15551234567',
+  chatGuid: 'iMessage;-;+1234567890',
   pollMessageGuid: pollMessage.guid,
   optionIdentifier: pollMessage.payloadData.item.orderedPollOptions[0].optionIdentifier
 });
+
+// Remove your vote
+await sdk.polls.unvote({
+  chatGuid: 'iMessage;-;+1234567890',
+  pollMessageGuid: pollMessage.guid,
+  optionIdentifier: 'option-uuid'
+});
+
+// Add a new option to an existing poll
+await sdk.polls.addOption({
+  chatGuid: 'iMessage;-;+1234567890',
+  pollMessageGuid: pollMessage.guid,
+  optionText: 'New Option D'
+});
 ```
 
-### Other Modules
+#### Poll Utility Functions
+
+Helper functions for parsing and displaying poll messages in real-time event handlers:
 
 ```typescript
-// Check if a contact has iMessage
-const hasIMessage = await sdk.handles.getHandleAvailability('+15551234567', 'imessage');
+import {
+  isPollMessage,
+  isPollVote,
+  parsePollDefinition,
+  parsePollVotes,
+  getPollSummary,
+  getOptionTextById
+} from '@photon-ai/advanced-imessage-kit';
 
-// Get location of Find My friends
-const locations = await sdk.icloud.getFindMyFriends();
+sdk.on('new-message', (message) => {
+  if (isPollMessage(message)) {
+    if (isPollVote(message)) {
+      const voteData = parsePollVotes(message);
+      voteData?.votes.forEach((vote) => {
+        const optionText = getOptionTextById(vote.voteOptionIdentifier);
+        console.log(`${vote.participantHandle} voted for "${optionText}"`);
+      });
+    } else {
+      const pollData = parsePollDefinition(message);
+      console.log('Poll title:', pollData?.title);
+      console.log('Options:', pollData?.options);
+    }
+
+    console.log(getPollSummary(message));
+  }
+});
+```
+
+Poll definitions are automatically cached when received. If a vote arrives for a poll created before the SDK started, the option text will show the UUID instead of the label.
+
+### Contacts (`sdk.contacts`)
+
+```typescript
+// Fetch all device contacts
+const contacts = await sdk.contacts.getContacts();
+
+// Get a specific contact card by phone or email
+const card = await sdk.contacts.getContactCard('+1234567890');
+// { firstName, lastName, emails, phones, ... }
+
+// Check whether you should share your contact card in this chat
+// Returns true when recommended (e.g., other side shared theirs, you haven't yet)
+const shouldShare = await sdk.contacts.shouldShareContact('chat-guid');
+if (shouldShare) {
+  await sdk.contacts.shareContactCard('chat-guid');
+}
+```
+
+### Handles (`sdk.handles`)
+
+```typescript
+// Check if a contact has iMessage or FaceTime
+const hasIMessage = await sdk.handles.getHandleAvailability('+1234567890', 'imessage');
+const hasFaceTime = await sdk.handles.getHandleAvailability('+1234567890', 'facetime');
+
+// Choose service based on availability
+const chatGuid = hasIMessage ? 'iMessage;-;+1234567890' : 'SMS;-;+1234567890';
+
+// Query handles with filtering
+const result = await sdk.handles.queryHandles({
+  address: '+1234567890',
+  with: ['chats'],
+  offset: 0,
+  limit: 50
+});
+
+// Get a single handle by GUID
+const handle = await sdk.handles.getHandle('handle-guid');
+
+// Get total handle count
+const count = await sdk.handles.getHandleCount();
+
+// Get a handle's focus status
+const focusStatus = await sdk.handles.getHandleFocusStatus('handle-guid');
+```
+
+### Server (`sdk.server`)
+
+```typescript
+// Get server info and status
+const info = await sdk.server.getServerInfo();
+// { os_version, server_version, private_api, helper_connected, detected_icloud, ... }
+
+// Get message statistics
+const stats = await sdk.server.getMessageStats();
+// { total, sent, received, last24h, last7d, last30d }
+
+// Get media statistics (all chats or per-chat)
+const mediaStats = await sdk.server.getMediaStatistics();
+const chatMediaStats = await sdk.server.getMediaStatisticsByChat();
+
+// Get server logs
+const logs = await sdk.server.getServerLogs(100);
+```
+
+### iCloud (`sdk.icloud`)
+
+```typescript
+// Get friends' locations via Find My
+const locations = await sdk.icloud.refreshFindMyFriends();
+
+for (const loc of locations) {
+  console.log(`${loc.handle}: ${loc.coordinates[0]}, ${loc.coordinates[1]}`);
+  if (loc.long_address) console.log(`  Address: ${loc.long_address}`);
+}
+```
+
+### Scheduled Messages (`sdk.scheduledMessages`)
+
+```typescript
+// Schedule a one-time message
+const scheduled = await sdk.scheduledMessages.createScheduledMessage({
+  type: 'send-message',
+  payload: {
+    chatGuid: 'any;-;+1234567890',
+    message: 'This is a scheduled message!',
+    method: 'apple-script'
+  },
+  scheduledFor: Date.now() + 3 * 1000,
+  schedule: { type: 'once' }
+});
 
 // Schedule a recurring message
+const tomorrow9am = new Date();
+tomorrow9am.setDate(tomorrow9am.getDate() + 1);
+tomorrow9am.setHours(9, 0, 0, 0);
+
 await sdk.scheduledMessages.createScheduledMessage({
   type: 'send-message',
   payload: {
-    chatGuid: 'iMessage;-;+15551234567',
-    message: 'Weekly report reminder'
+    chatGuid: 'any;-;+1234567890',
+    message: 'Good morning!',
+    method: 'apple-script'
   },
-  schedule: { type: 'recurring', intervalType: 'weekly', interval: 1 }
+  scheduledFor: tomorrow9am.getTime(),
+  schedule: {
+    type: 'recurring',
+    intervalType: 'daily', // 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+    interval: 1
+  }
+});
+
+// List, update, and delete scheduled messages
+const all = await sdk.scheduledMessages.getScheduledMessages();
+await sdk.scheduledMessages.updateScheduledMessage('scheduled-id', { /* ... */ });
+await sdk.scheduledMessages.deleteScheduledMessage('scheduled-id');
+```
+
+### Messages — Additional Methods
+
+```typescript
+// Trigger a message notification
+await sdk.messages.notifyMessage('message-guid');
+
+// Get embedded media from a message
+const media = await sdk.messages.getEmbeddedMedia('message-guid');
+
+// Get message counts
+const total = await sdk.messages.getMessageCount();
+const sent = await sdk.messages.getSentMessageCount();
+const updated = await sdk.messages.getUpdatedMessageCount();
+
+// Search messages
+const results = await sdk.messages.searchMessages({
+  query: 'keyword',
+  chatGuid: 'iMessage;-;+1234567890',
+  limit: 20
 });
 ```
 
@@ -529,10 +1000,12 @@ interface FindMyLocationItem {
 
 | Type | Format | Example |
 | :--- | :--- | :--- |
-| Phone number | `+<country><number>` | `+15551234567` |
+| Phone number | `+<country><number>` | `+1234567890` |
 | Email | `user@example.com` | `pilot@photon.codes` |
 | Group chat (Basic) | `chat<guid>` | `chat45e2b868ce1e43da89af262922733382` |
-| DM (Advanced) | `iMessage;-;<address>` | `iMessage;-;+15551234567` |
+| DM (Advanced) | `iMessage;-;<address>` | `iMessage;-;+1234567890` |
+| SMS DM (Advanced) | `SMS;-;<address>` | `SMS;-;+1234567890` |
+| Auto-detect (Advanced) | `any;-;<address>` | `any;-;+1234567890` |
 | Group (Advanced) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
 
 ### Message Effects (Advanced Kit)
@@ -631,7 +1104,7 @@ if (isAudioAttachment(attachment)) { /* ... */ }
 import { IMessageError } from '@photon-ai/imessage-kit';
 
 try {
-    await sdk.send('+15551234567', 'Hello');
+    await sdk.send('+1234567890', 'Hello');
 } catch (err) {
     if (IMessageError.is(err)) {
         console.error(`[${err.code}] ${err.message}`);

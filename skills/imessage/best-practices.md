@@ -11,10 +11,43 @@ These guidelines apply to both the Basic and Advanced iMessage Kits and are cruc
 
 ## 1. Graceful Shutdown
 
-Always ensure you properly close connections and destroy timers to prevent resource leaks and allow your application to shut down cleanly.
+Always ensure you properly close connections and destroy timers to prevent resource leaks and allow your application to shut down cleanly. Use `try...finally` to guarantee cleanup runs even when errors occur.
 
--   **Basic Kit (`IMessageSDK`):** Call `await sdk.close()` to release the database lock. If you are using `MessageScheduler` or `Reminders`, you must also call `destroy()` on those instances to clear any pending timers.
--   **Advanced Kit (`SDK`):** Call `await sdk.close()` to terminate the WebSocket connection. It is best practice to place this call inside a process exit handler (e.g., `process.on("SIGINT", ...)`) to ensure it runs even if the application is interrupted.
+**Basic Kit:**
+
+```typescript
+const sdk = new IMessageSDK();
+try {
+  await sdk.send('+1234567890', 'Hello!');
+} finally {
+  await sdk.close();
+}
+```
+
+**Advanced Kit:**
+
+```typescript
+const sdk = SDK({ serverUrl, apiKey });
+try {
+  await sdk.connect();
+  // ... operations ...
+} finally {
+  await sdk.close();
+}
+```
+
+**Schedulers (Basic Kit):**
+
+```typescript
+const scheduler = new MessageScheduler(sdk);
+try {
+  scheduler.schedule({ to: '+1234567890', content: 'Reminder!', sendAt: new Date(Date.now() + 60000) });
+  // ... keep running ...
+} finally {
+  scheduler.destroy();
+  await sdk.close();
+}
+```
 
 ## 2. Prevent Auto-Reply Loops
 
@@ -51,7 +84,7 @@ Network requests, file system operations, and AppleScript executions can fail fo
 
 ```typescript
 try {
-  await sdk.send("+15551234567", "Hello!");
+  await sdk.send("+1234567890", "Hello!");
 } catch (error) {
   console.error("Failed to send message:", error);
   // Implement retry logic or user notification if necessary
@@ -63,12 +96,99 @@ try {
 For a better user experience, use typing indicators to show that your bot is processing a request. Always wrap the logic in a `try...finally` block to ensure the indicator is stopped, even if an error occurs.
 
 ```typescript
-const chatGuid = "iMessage;-;+15551234567";
+const chatGuid = "iMessage;-;+1234567890";
 try {
-    await sdk.chats.startTyping({ chatGuid });
+    await sdk.chats.startTyping(chatGuid);
     // ... your logic that might take time ...
     await sdk.messages.sendMessage({ chatGuid, message: "Here is the result." });
 } finally {
-    await sdk.chats.stopTyping({ chatGuid });
+    await sdk.chats.stopTyping(chatGuid);
+}
+```
+
+## 6. Message Deduplication (Advanced Kit)
+
+Long-running agents accumulate processed message GUIDs in memory. Periodically clear the cache to prevent memory leaks while retaining a safety window for deduplication:
+
+```typescript
+setInterval(() => {
+  const count = sdk.getProcessedMessageCount();
+  if (count > 5000) {
+    sdk.clearProcessedMessages(1000);
+  }
+}, 60000);
+```
+
+## 7. Handle Disconnects with Bounded Retry (Advanced Kit)
+
+Avoid tight reconnect loops that hammer the server. Use a bounded retry with backoff:
+
+```typescript
+sdk.on('disconnect', () => {
+  console.warn('Disconnected. Reconnecting in 5s...');
+  setTimeout(() => sdk.connect(), 5000);
+});
+```
+
+---
+
+## Common Patterns
+
+### Pattern: Message History Analysis
+
+```typescript
+const messages = await sdk.getMessages({
+  sender: '+1234567890',
+  limit: 100,
+  since: new Date('2025-01-01')
+});
+
+for (const msg of messages.messages) {
+  console.log(`[${msg.date.toISOString()}] ${msg.sender}: ${msg.text}`);
+}
+```
+
+### Pattern: Unread Message Processor
+
+```typescript
+const unread = await sdk.getUnreadMessages();
+
+for (const { sender, messages } of unread.groups) {
+  console.log(`Processing ${messages.length} unread from ${sender}`);
+
+  for (const msg of messages) {
+    // Process each unread message
+  }
+}
+```
+
+### Pattern: Group Chat Discovery
+
+```typescript
+const groups = await sdk.listChats({ type: 'group' });
+
+for (const chat of groups) {
+  console.log(`Group: ${chat.displayName}`);
+  console.log(`  Chat ID: ${chat.chatId}`);
+  console.log(`  Unread: ${chat.unreadCount}`);
+}
+```
+
+### Pattern: Attachment Downloader
+
+```typescript
+import { attachmentExists, downloadAttachment } from '@photon-ai/imessage-kit';
+
+const messages = await sdk.getMessages({ hasAttachments: true, limit: 10 });
+
+for (const msg of messages.messages) {
+  for (const attachment of msg.attachments) {
+    if (await attachmentExists(attachment)) {
+      await downloadAttachment(
+        attachment,
+        `/path/to/save/${attachment.fileName}`
+      );
+    }
+  }
 }
 ```
