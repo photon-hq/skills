@@ -1,9 +1,10 @@
 ---
 name: imessage
 description: >
-  Exhaustive, source-accurate guide for building iMessage applications using @photon-ai/imessage-kit (Basic)
-  and @photon-ai/advanced-imessage-kit (Advanced). Covers every method, type, option, event, and pattern for iMessage automation,
-  AI agents, and chat bots.
+  Build iMessage bots, AI agents, and automations with @photon-ai/imessage-kit (free, local) and
+  @photon-ai/advanced-imessage-kit (production). Send text, images, files, effects, reactions, stickers, and polls.
+  Edit, unsend, and schedule messages. Watch real-time events, manage group chats, query contacts, and handle errors.
+  Covers setup, every API method, types, events, error codes, and best practices.
 license: MIT
 metadata:
   author: photon-hq
@@ -1098,7 +1099,29 @@ if (isAudioAttachment(attachment)) { /* ... */ }
 
 ---
 
-## Error Handling (Basic Kit)
+## Error Reference
+
+### Basic Kit — Error Classes
+
+The Basic Kit exports typed error classes for granular catch handling:
+
+```typescript
+import { SendError, DatabaseError, PlatformError } from '@photon-ai/imessage-kit';
+
+try {
+    await sdk.send('+1234567890', 'Hello');
+} catch (error) {
+    if (error instanceof SendError) {
+        console.error('Send failed:', error.message);
+    } else if (error instanceof DatabaseError) {
+        console.error('Database error:', error.message);
+    } else if (error instanceof PlatformError) {
+        console.error('Platform error:', error.message);
+    }
+}
+```
+
+You can also use the unified `IMessageError` check to access the error code:
 
 ```typescript
 import { IMessageError } from '@photon-ai/imessage-kit';
@@ -1108,9 +1131,117 @@ try {
 } catch (err) {
     if (IMessageError.is(err)) {
         console.error(`[${err.code}] ${err.message}`);
-        // err.code is one of: PLATFORM | DATABASE | SEND | WEBHOOK | CONFIG | UNKNOWN
     }
 }
+```
+
+### Basic Kit — Error Codes
+
+| Code | Class | Meaning | Common Causes |
+| :--- | :--- | :--- | :--- |
+| `PLATFORM` | `PlatformError` | macOS or iMessage service failure | Not running on macOS, Messages app not signed in, Full Disk Access not granted |
+| `DATABASE` | `DatabaseError` | Cannot read iMessage database | Database locked by another process, corrupt `chat.db`, wrong `databasePath` |
+| `SEND` | `SendError` | Message failed to send | Invalid phone/email, AppleScript timeout, recipient unreachable, iMessage service down |
+| `WEBHOOK` | `IMessageError` | Webhook delivery failure | Webhook URL unreachable, endpoint returned non-2xx, network timeout |
+| `CONFIG` | `IMessageError` | Invalid SDK configuration | Missing required config fields, invalid `pollInterval`, conflicting options |
+| `UNKNOWN` | `IMessageError` | Unexpected error | Unhandled edge case — wrap in `try/catch` and log for debugging |
+
+### Advanced Kit — Error Handling
+
+The Advanced Kit surfaces errors through two channels: thrown exceptions on API calls and event-based errors on the SDK instance.
+
+#### API Call Errors
+
+API methods throw errors with an HTTP `response` object when the server rejects a request:
+
+```typescript
+try {
+    await sdk.messages.sendMessage({
+        chatGuid: 'iMessage;-;+1234567890',
+        message: 'Hello'
+    });
+} catch (error) {
+    const status = error.response?.status;
+    if (status === 400) {
+        console.error('Bad request — invalid parameters');
+    } else if (status === 401) {
+        console.error('Unauthorized — check your API key');
+    } else if (status === 403) {
+        console.error('Forbidden — insufficient permissions');
+    } else if (status === 404) {
+        console.error('Not found — chat does not exist');
+    } else if (status === 500) {
+        console.error('Server error — retry later');
+    } else {
+        console.error('Unexpected error:', error.message);
+    }
+}
+```
+
+#### Advanced Kit — HTTP Error Reference
+
+| Status | Meaning | Common Causes |
+| :--- | :--- | :--- |
+| `400` | Bad request | Invalid `chatGuid` format, missing required fields, malformed message content |
+| `401` | Unauthorized | Missing or invalid API key, expired token |
+| `403` | Forbidden | Insufficient permissions for the requested resource or action |
+| `404` | Not found | Chat, message, or attachment GUID does not exist on the server |
+| `500` | Server error | Internal server failure — safe to retry with backoff |
+
+#### Event-Based Errors
+
+For connection and delivery failures, listen to SDK events:
+
+```typescript
+sdk.on('error', (error) => {
+    console.error('Connection/SDK error:', error);
+});
+
+sdk.on('message-send-error', (data) => {
+    console.error('Message delivery failed:', data);
+});
+
+sdk.on('disconnect', () => {
+    console.warn('Lost connection to server');
+});
+```
+
+#### Combined Error Handling Pattern (Advanced Kit)
+
+A robust pattern for production agents that handles both API and event errors:
+
+```typescript
+const sdk = SDK({ serverUrl: process.env.SERVER_URL, apiKey: process.env.API_KEY });
+
+sdk.on('error', (error) => {
+    console.error('[SDK Error]', error);
+});
+
+sdk.on('message-send-error', (data) => {
+    console.error('[Delivery Failed]', data);
+});
+
+sdk.on('disconnect', () => {
+    console.warn('[Disconnected] Reconnecting in 5s...');
+    setTimeout(() => sdk.connect(), 5000);
+});
+
+sdk.on('new-message', async (message) => {
+    if (message.isFromMe) return;
+    const chatGuid = message.chats?.[0]?.guid;
+    if (!chatGuid) return;
+
+    try {
+        await sdk.chats.startTyping(chatGuid);
+        await sdk.messages.sendMessage({ chatGuid, message: 'Got it!' });
+    } catch (error) {
+        console.error(`[Send Error] ${error.response?.status ?? 'unknown'}:`, error.message);
+    } finally {
+        await sdk.chats.stopTyping(chatGuid);
+    }
+});
+
+await sdk.connect();
 ```
 
 ---
