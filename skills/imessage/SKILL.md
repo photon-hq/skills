@@ -13,7 +13,7 @@ metadata:
 
 # iMessage Skill
 
-This skill provides a complete, source-accurate reference for building iMessage applications using both the Basic (`@photon-ai/imessage-kit`) and Advanced (`@photon-ai/advanced-imessage-kit`) libraries. It is designed to be exhaustive, covering every exported method, type, option, and real-world usage pattern.
+This skill provides a complete, source-accurate reference for building iMessage applications using both the Basic (`@photon-ai/imessage-kit`) and Advanced (`@photon-ai/advanced-imessage-kit`) libraries.
 
 ## Infrastructure & Architecture
 
