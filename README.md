@@ -8,7 +8,7 @@ Skills follow the [Agent Skills](https://skills.sh/) format.
 
 ### imessage
 
-Full API reference for [@photon-ai/imessage-kit](https://github.com/photon-hq/imessage-kit) and [@photon-ai/advanced-imessage-kit](https://github.com/photon-hq/advanced-imessage-kit). Covers two ways to integrate iMessage into your product: using your own local iMessage account via Apple’s public APIs, or using Photon’s managed service with additional capabilities.
+Full API reference for [`@photon-ai/imessage-kit`](https://github.com/photon-hq/imessage-kit) and [`@photon-ai/advanced-imessage-kit`](https://github.com/photon-hq/advanced-imessage-kit). Covers two ways to integrate iMessage into your product: using your own local iMessage account via Apple’s public APIs, or using Photon’s managed service with additional capabilities.
 
 **Use when:**
 - Building an iMessage bot or automation
