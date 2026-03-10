@@ -115,7 +115,7 @@ await sdk.close();
 
 ---
 
-## Basic Kit: Final Exhaustive API Reference
+## Basic Kit: API Reference
 
 ### Initialization (`new IMessageSDK`)
 
@@ -341,7 +341,7 @@ reminders.destroy(); // IMPORTANT: Clean up on shutdown
 
 ---
 
-## Advanced Kit: Final Exhaustive API Reference
+## Advanced Kit: API Reference
 
 ### Initialization & Connection (`SDK`)
 
