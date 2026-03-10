@@ -1406,6 +1406,101 @@ console.log(`Message received — guid: ${message.guid}, sender: ${sender}, leng
 
 ---
 
+## Best Practices
+
+### Use Typing Indicators (Managed Kit)
+
+Show typing indicators while your agent processes a request. Always wrap in `try...finally` so the indicator stops even if an error occurs.
+
+```typescript
+const chatGuid = 'iMessage;-;+1234567890';
+try {
+    await sdk.chats.startTyping(chatGuid);
+    const reply = await processMessage(message.text);
+    await sdk.messages.sendMessage({ chatGuid, message: reply });
+} finally {
+    await sdk.chats.stopTyping(chatGuid);
+}
+```
+
+### Periodic Deduplication Cleanup (Managed Kit)
+
+Long-running agents accumulate processed message GUIDs in memory. Periodically clear the cache to prevent memory leaks while retaining a safety window:
+
+```typescript
+setInterval(() => {
+  const count = sdk.getProcessedMessageCount();
+  if (count > 5000) {
+    sdk.clearProcessedMessages(1000);
+  }
+}, 60000);
+```
+
+---
+
+## Common Patterns (Self-Hosted Kit)
+
+### Message History Analysis
+
+```typescript
+const messages = await sdk.getMessages({
+  sender: '+1234567890',
+  limit: 100,
+  since: new Date('2025-01-01')
+});
+
+for (const msg of messages.messages) {
+  console.log(`[${msg.date.toISOString()}] ${msg.sender}: ${msg.text}`);
+}
+```
+
+### Unread Message Processor
+
+```typescript
+const unread = await sdk.getUnreadMessages();
+
+for (const { sender, messages } of unread.groups) {
+  console.log(`Processing ${messages.length} unread from ${sender}`);
+
+  for (const msg of messages) {
+    // Process each unread message
+  }
+}
+```
+
+### Group Chat Discovery
+
+```typescript
+const groups = await sdk.listChats({ type: 'group' });
+
+for (const chat of groups) {
+  console.log(`Group: ${chat.displayName}`);
+  console.log(`  Chat ID: ${chat.chatId}`);
+  console.log(`  Unread: ${chat.unreadCount}`);
+}
+```
+
+### Attachment Downloader
+
+```typescript
+import { attachmentExists, downloadAttachment } from '@photon-ai/imessage-kit';
+
+const messages = await sdk.getMessages({ hasAttachments: true, limit: 10 });
+
+for (const msg of messages.messages) {
+  for (const attachment of msg.attachments) {
+    if (await attachmentExists(attachment)) {
+      await downloadAttachment(
+        attachment,
+        `/path/to/save/${attachment.fileName}`
+      );
+    }
+  }
+}
+```
+
+---
+
 ## Common Mistakes to Avoid
 
 | Mistake | Why it's a problem | Fix |
