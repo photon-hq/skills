@@ -13,7 +13,7 @@ metadata:
 
 # iMessage Skill
 
-This skill provides a complete, source-accurate reference for building iMessage AI agents and applications using both the Self-Hosted (`@photon-ai/imessage-kit`) and Managed (`@photon-ai/advanced-imessage-kit`) libraries.
+This skill provides a complete, source-accurate reference for building iMessage AI agents and applications using both the Self-Hosted (`@photon-ai/imessage-kit`) and Advanced (`@photon-ai/advanced-imessage-kit`) libraries.
 
 ## Infrastructure & Architecture
 
@@ -32,7 +32,7 @@ Choose this if you want to **run everything on your own Mac**. There's no extern
 
 **Best for:** personal AI agents, local automations, scheduled messaging, quick prototypes, and projects where you want full control over your data and infrastructure.
 
-### Managed Infrastructure — `@photon-ai/advanced-imessage-kit`
+### Advanced Infrastructure — `@photon-ai/advanced-imessage-kit`
 
 Choose this if you want a **production-grade, managed service** without the hassle of hosting and maintaining your own setup. Photon handles the infrastructure — you just connect with an API key. This scales to any number of phone numbers and delivers real-time events over WebSockets.
 
@@ -40,7 +40,7 @@ Choose this if you want a **production-grade, managed service** without the hass
 
 ### Feature Comparison
 
-| Feature | Self-Hosted (`imessage-kit`) | Managed (`advanced-imessage-kit`) |
+| Feature | Self-Hosted (`imessage-kit`) | Advanced (`advanced-imessage-kit`) |
 | :--- | :--- | :--- |
 | **Architecture** | Runs in your Node.js process on your Mac | Client/Server, connects to Photon's managed infra |
 | **Real-time** | Polling (periodic checks) | WebSockets (instant events) |
@@ -86,7 +86,7 @@ try {
 }
 ```
 
-### Managed Kit
+### Advanced Kit
 
 Install the package:
 
@@ -96,7 +96,7 @@ npm install @photon-ai/advanced-imessage-kit
 bun add @photon-ai/advanced-imessage-kit
 ```
 
-The Managed Kit connects to Photon's server infrastructure — no hosting required on your end. Visit [photon.codes](https://photon.codes) to get your API key and endpoint.
+The Advanced Kit connects to Photon's server infrastructure — no hosting required on your end. Visit [photon.codes](https://photon.codes) to get your API key and endpoint.
 
 Verify the setup:
 
@@ -114,7 +114,7 @@ await sdk.connect();
 sdk.on('ready', async () => {
   await sdk.messages.sendMessage({
     chatGuid: 'iMessage;-;+1234567890',
-    message: 'Hello from Managed Kit!'
+    message: 'Hello from Advanced Kit!'
   });
 });
 
@@ -353,7 +353,7 @@ reminders.destroy(); // IMPORTANT: Clean up on shutdown
 
 ---
 
-## Managed Kit: API Reference
+## Advanced Kit: API Reference
 
 ### Initialization & Connection (`SDK`)
 
@@ -370,7 +370,7 @@ const config: ClientConfig = {
 const sdk = SDK(config);
 
 sdk.on('ready', () => {
-  console.log('Managed Kit Ready!');
+  console.log('Advanced Kit Ready!');
   // Your application logic starts here
 });
 
@@ -949,7 +949,7 @@ interface Attachment {
 }
 ```
 
-### Managed Kit — `MessageResponse` Object
+### Advanced Kit — `MessageResponse` Object
 
 ```typescript
 type MessageResponse = {
@@ -987,7 +987,7 @@ type MessageResponse = {
 }
 ```
 
-### Managed Kit — `FindMyLocationItem` Object
+### Advanced Kit — `FindMyLocationItem` Object
 
 ```typescript
 interface FindMyLocationItem {
@@ -1015,12 +1015,12 @@ interface FindMyLocationItem {
 | Phone number | `+<country><number>` | `+1234567890` |
 | Email | `user@example.com` | `pilot@photon.codes` |
 | Group chat (Self-Hosted) | `chat<guid>` | `chat45e2b868ce1e43da89af262922733382` |
-| DM (Managed) | `iMessage;-;<address>` | `iMessage;-;+1234567890` |
-| SMS DM (Managed) | `SMS;-;<address>` | `SMS;-;+1234567890` |
-| Auto-detect (Managed) | `any;-;<address>` | `any;-;+1234567890` |
-| Group (Managed) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
+| DM (Advanced) | `iMessage;-;<address>` | `iMessage;-;+1234567890` |
+| SMS DM (Advanced) | `SMS;-;<address>` | `SMS;-;+1234567890` |
+| Auto-detect (Advanced) | `any;-;<address>` | `any;-;+1234567890` |
+| Group (Advanced) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
 
-### Message Effects (Managed Kit)
+### Message Effects (Advanced Kit)
 
 | Effect | `effectId` |
 | :--- | :--- |
@@ -1157,9 +1157,9 @@ try {
 | `CONFIG` | `IMessageError` | Invalid SDK configuration | Missing required config fields, invalid `pollInterval`, conflicting options |
 | `UNKNOWN` | `IMessageError` | Unexpected error | Unhandled edge case — wrap in `try/catch` and log for debugging |
 
-### Managed Kit — Error Handling
+### Advanced Kit — Error Handling
 
-The Managed Kit surfaces errors through two channels: thrown exceptions on API calls and event-based errors on the SDK instance.
+The Advanced Kit surfaces errors through two channels: thrown exceptions on API calls and event-based errors on the SDK instance.
 
 #### API Call Errors
 
@@ -1189,7 +1189,7 @@ try {
 }
 ```
 
-#### Managed Kit — HTTP Error Reference
+#### Advanced Kit — HTTP Error Reference
 
 | Status | Meaning | Common Causes |
 | :--- | :--- | :--- |
@@ -1217,7 +1217,7 @@ sdk.on('disconnect', () => {
 });
 ```
 
-#### Combined Error Handling Pattern (Managed Kit)
+#### Combined Error Handling Pattern (Advanced Kit)
 
 A robust pattern for production AI agents that handles both API and event errors:
 
@@ -1283,7 +1283,7 @@ const sdk = new IMessageSDK({ plugins: [myPlugin] });
 
 ---
 
-## Agent Lifecycle (Managed Kit)
+## Agent Lifecycle (Advanced Kit)
 
 The recommended lifecycle for a long-running AI agent:
 
@@ -1408,7 +1408,7 @@ console.log(`Message received — guid: ${message.guid}, sender: ${sender}, leng
 
 ## Best Practices
 
-### Use Typing Indicators (Managed Kit)
+### Use Typing Indicators (Advanced Kit)
 
 Show typing indicators while your agent processes a request. Always wrap in `try...finally` so the indicator stops even if an error occurs.
 
@@ -1423,7 +1423,7 @@ try {
 }
 ```
 
-### Periodic Deduplication Cleanup (Managed Kit)
+### Periodic Deduplication Cleanup (Advanced Kit)
 
 Long-running agents accumulate processed message GUIDs in memory. Periodically clear the cache to prevent memory leaks while retaining a safety window:
 
