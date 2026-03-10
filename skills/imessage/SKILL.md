@@ -84,7 +84,7 @@ npm install @photon-ai/advanced-imessage-kit
 bun add @photon-ai/advanced-imessage-kit
 ```
 
-The Advanced Kit connects to Photon's managed server infrastructure. Assume the server is already running with an API key and endpoint provided by Photon.
+The Advanced Kit connects to Photon's managed server infrastructure. Visit [photon.codes](https://photon.codes) to get your API key and endpoint.
 
 Verify the setup:
 
