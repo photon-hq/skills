@@ -1,10 +1,12 @@
 ---
 name: imessage
 description: >
-  Build iMessage AI agents, automations, and conversational apps with @photon-ai/imessage-kit (self-hosted, runs on
-  your Mac) and @photon-ai/advanced-imessage-kit (managed infrastructure by Photon). Send text, images, files, effects,
-  reactions, stickers, and polls. Edit, unsend, and schedule messages. Watch real-time events, manage group chats,
-  query contacts, and handle errors. Covers setup, every API method, types, events, error codes, and best practices.
+  Send and receive iMessages programmatically. Build iMessage AI agents, automations, and conversational apps with
+  @photon-ai/imessage-kit (self-hosted on your Mac) and @photon-ai/advanced-imessage-kit (production infrastructure
+  by Photon). Text, images, files, effects, reactions, stickers, polls, group chats, scheduled messages, real-time
+  events, contacts, and error handling. Covers setup, every API method, types, and best practices.
+  Keywords: imessage, apple messages, sms, text message, send message, messaging, chat, chatbot, conversational ai,
+  message api, macos, applescript, notifications, blue bubble, phone number, group chat, real-time, webhooks.
 license: MIT
 metadata:
   author: photon-hq
