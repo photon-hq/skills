@@ -1,10 +1,10 @@
 ---
 name: imessage
 description: >
-  Build iMessage bots, AI agents, and automations with @photon-ai/imessage-kit (free, local) and
-  @photon-ai/advanced-imessage-kit (production). Send text, images, files, effects, reactions, stickers, and polls.
-  Edit, unsend, and schedule messages. Watch real-time events, manage group chats, query contacts, and handle errors.
-  Covers setup, every API method, types, events, error codes, and best practices.
+  Build iMessage AI agents, automations, and conversational apps with @photon-ai/imessage-kit (self-hosted, runs on
+  your Mac) and @photon-ai/advanced-imessage-kit (managed infrastructure by Photon). Send text, images, files, effects,
+  reactions, stickers, and polls. Edit, unsend, and schedule messages. Watch real-time events, manage group chats,
+  query contacts, and handle errors. Covers setup, every API method, types, events, error codes, and best practices.
 license: MIT
 metadata:
   author: photon-hq
@@ -13,36 +13,48 @@ metadata:
 
 # iMessage Skill
 
-This skill provides a complete, source-accurate reference for building iMessage applications using both the Basic (`@photon-ai/imessage-kit`) and Advanced (`@photon-ai/advanced-imessage-kit`) libraries.
+This skill provides a complete, source-accurate reference for building iMessage AI agents and applications using both the Self-Hosted (`@photon-ai/imessage-kit`) and Managed (`@photon-ai/advanced-imessage-kit`) libraries.
 
 ## Infrastructure & Architecture
 
-It is critical to understand that this technology is built entirely on **Photon's in-office infrastructure** and is designed for high reliability and performance, with two distinct SDKs:
+This technology is built entirely on **Photon's in-office infrastructure** and is designed for high reliability and performance. There are two SDKs — pick the one that fits how you want to build:
 
-- **[`@photon-ai/imessage-kit`](https://github.com/nicepkg/imessage-kit)** — A free, open-source library that runs directly on a user's own Mac.
-- **[`@photon-ai/advanced-imessage-kit`](https://photon.codes)** — A commercial, client/server solution for production applications.
+- **[`@photon-ai/imessage-kit`](https://github.com/nicepkg/imessage-kit)** — Self-hosted. Runs directly on your Mac. You manage the setup.
+- **[`@photon-ai/advanced-imessage-kit`](https://photon.codes)** — Managed by Photon. Production-ready infrastructure you don't have to host or maintain. Scales to any number of numbers.
 
-## Kit Selection Guide
+## Choosing the Right Kit
 
-First, help the user choose the right tool for the job. Use the table below to guide the decision.
+Both kits are fully capable of powering iMessage AI agents. The choice comes down to how you want to run your infrastructure and what features you need.
 
-| Feature | Basic Kit (`@photon-ai/imessage-kit`) | Advanced Kit (`@photon-ai/advanced-imessage-kit`) |
+### Self-Hosted — `@photon-ai/imessage-kit`
+
+Choose this if you want to **run everything on your own Mac**. There's no external service to depend on — your AI agent runs locally, reads the iMessage database directly, and sends messages via AppleScript. You own the entire stack.
+
+**Best for:** personal AI agents, local automations, scheduled messaging, quick prototypes, and projects where you want full control over your data and infrastructure.
+
+### Managed Infrastructure — `@photon-ai/advanced-imessage-kit`
+
+Choose this if you want a **production-grade, managed service** without the hassle of hosting and maintaining your own setup. Photon handles the infrastructure — you just connect with an API key. This scales to any number of phone numbers and delivers real-time events over WebSockets.
+
+**Best for:** production AI agents, multi-number setups, real-time conversational apps, and teams that don't want to manage macOS servers.
+
+### Feature Comparison
+
+| Feature | Self-Hosted (`imessage-kit`) | Managed (`advanced-imessage-kit`) |
 | :--- | :--- | :--- |
-| **Use Case** | Simple bots, personal automation, scheduled messages | Enterprise apps, multi-user systems, real-time agents |
-| **Architecture** | Library, runs in your Node.js process on your Mac | Client/Server, connects to Photon's managed infra |
+| **Architecture** | Runs in your Node.js process on your Mac | Client/Server, connects to Photon's managed infra |
 | **Real-time** | Polling (periodic checks) | WebSockets (instant events) |
 | **Message Sending** | Text, images, files | Text, images, files, **effects, replies, tapbacks, stickers, polls** |
 | **Message Control** | Send only | Send, **edit, unsend** |
 | **Group Chats** | Send to existing groups | Send, **create, rename, add/remove participants, set group icon** |
-| **Advanced** | Scheduled messages, simple auto-reply | **Typing indicators, FaceTime links, Find My friends, focus status** |
-
-**Recommendation:** For quick scripts or personal projects, start with the **Basic Kit**. For complex, real-time applications requiring advanced features, use the **Advanced Kit**.
+| **Scaling** | Single Mac | Any number of numbers, managed by Photon |
+| **Advanced** | Scheduled messages, auto-reply chains | **Typing indicators, FaceTime links, Find My friends, focus status** |
 
 ---
 
 ## Setup & Installation
 
-### Basic Kit
+### Self-Hosted Kit
 
 Install the package:
 
@@ -74,7 +86,7 @@ try {
 }
 ```
 
-### Advanced Kit
+### Managed Kit
 
 Install the package:
 
@@ -84,7 +96,7 @@ npm install @photon-ai/advanced-imessage-kit
 bun add @photon-ai/advanced-imessage-kit
 ```
 
-The Advanced Kit connects to Photon's managed server infrastructure. Visit [photon.codes](https://photon.codes) to get your API key and endpoint.
+The Managed Kit connects to Photon's server infrastructure — no hosting required on your end. Visit [photon.codes](https://photon.codes) to get your API key and endpoint.
 
 Verify the setup:
 
@@ -102,7 +114,7 @@ await sdk.connect();
 sdk.on('ready', async () => {
   await sdk.messages.sendMessage({
     chatGuid: 'iMessage;-;+1234567890',
-    message: 'Hello from Advanced Kit!'
+    message: 'Hello from Managed Kit!'
   });
 });
 
@@ -115,7 +127,7 @@ await sdk.close();
 
 ---
 
-## Basic Kit: API Reference
+## Self-Hosted Kit: API Reference
 
 ### Initialization (`new IMessageSDK`)
 
@@ -166,7 +178,7 @@ import { IMessageSDK } from '@photon-ai/imessage-kit';
 await using sdk = new IMessageSDK();
 
 // Send a simple text message
-await sdk.send('+1234567890', 'Hello from the Basic Kit!');
+await sdk.send('+1234567890', 'Hello from the Self-Hosted Kit!');
 
 // Send a message with an image and a file
 const result = await sdk.send('+1234567890', {
@@ -341,7 +353,7 @@ reminders.destroy(); // IMPORTANT: Clean up on shutdown
 
 ---
 
-## Advanced Kit: API Reference
+## Managed Kit: API Reference
 
 ### Initialization & Connection (`SDK`)
 
@@ -358,7 +370,7 @@ const config: ClientConfig = {
 const sdk = SDK(config);
 
 sdk.on('ready', () => {
-  console.log('Advanced Kit Ready!');
+  console.log('Managed Kit Ready!');
   // Your application logic starts here
 });
 
@@ -907,7 +919,7 @@ const results = await sdk.messages.searchMessages({
 
 ## Type Reference
 
-### Basic Kit — `Message` Object
+### Self-Hosted Kit — `Message` Object
 
 ```typescript
 interface Message {
@@ -937,7 +949,7 @@ interface Attachment {
 }
 ```
 
-### Advanced Kit — `MessageResponse` Object
+### Managed Kit — `MessageResponse` Object
 
 ```typescript
 type MessageResponse = {
@@ -975,7 +987,7 @@ type MessageResponse = {
 }
 ```
 
-### Advanced Kit — `FindMyLocationItem` Object
+### Managed Kit — `FindMyLocationItem` Object
 
 ```typescript
 interface FindMyLocationItem {
@@ -1002,13 +1014,13 @@ interface FindMyLocationItem {
 | :--- | :--- | :--- |
 | Phone number | `+<country><number>` | `+1234567890` |
 | Email | `user@example.com` | `pilot@photon.codes` |
-| Group chat (Basic) | `chat<guid>` | `chat45e2b868ce1e43da89af262922733382` |
-| DM (Advanced) | `iMessage;-;<address>` | `iMessage;-;+1234567890` |
-| SMS DM (Advanced) | `SMS;-;<address>` | `SMS;-;+1234567890` |
-| Auto-detect (Advanced) | `any;-;<address>` | `any;-;+1234567890` |
-| Group (Advanced) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
+| Group chat (Self-Hosted) | `chat<guid>` | `chat45e2b868ce1e43da89af262922733382` |
+| DM (Managed) | `iMessage;-;<address>` | `iMessage;-;+1234567890` |
+| SMS DM (Managed) | `SMS;-;<address>` | `SMS;-;+1234567890` |
+| Auto-detect (Managed) | `any;-;<address>` | `any;-;+1234567890` |
+| Group (Managed) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
 
-### Message Effects (Advanced Kit)
+### Message Effects (Managed Kit)
 
 | Effect | `effectId` |
 | :--- | :--- |
@@ -1037,7 +1049,7 @@ interface FindMyLocationItem {
 | ‼️ Emphasize | `emphasize` | `-emphasize` |
 | ❓ Question | `question` | `-question` |
 
-### Reminder Duration Formats (Basic Kit)
+### Reminder Duration Formats (Self-Hosted Kit)
 
 | Format | Example |
 | :--- | :--- |
@@ -1047,7 +1059,7 @@ interface FindMyLocationItem {
 | Days | `"1 day"` |
 | Weeks | `"1 week"` |
 
-### Reminder Time Formats (Basic Kit `reminders.at`)
+### Reminder Time Formats (Self-Hosted Kit `reminders.at`)
 
 | Format | Example |
 | :--- | :--- |
@@ -1058,7 +1070,7 @@ interface FindMyLocationItem {
 
 ---
 
-## Attachment Helpers (Basic Kit)
+## Attachment Helpers (Self-Hosted Kit)
 
 Import from `@photon-ai/imessage-kit/helpers`.
 
@@ -1100,9 +1112,9 @@ if (isAudioAttachment(attachment)) { /* ... */ }
 
 ## Error Reference
 
-### Basic Kit — Error Classes
+### Self-Hosted Kit — Error Classes
 
-The Basic Kit exports typed error classes for granular catch handling:
+The Self-Hosted Kit exports typed error classes for granular catch handling:
 
 ```typescript
 import { SendError, DatabaseError, PlatformError } from '@photon-ai/imessage-kit';
@@ -1134,7 +1146,7 @@ try {
 }
 ```
 
-### Basic Kit — Error Codes
+### Self-Hosted Kit — Error Codes
 
 | Code | Class | Meaning | Common Causes |
 | :--- | :--- | :--- | :--- |
@@ -1145,9 +1157,9 @@ try {
 | `CONFIG` | `IMessageError` | Invalid SDK configuration | Missing required config fields, invalid `pollInterval`, conflicting options |
 | `UNKNOWN` | `IMessageError` | Unexpected error | Unhandled edge case — wrap in `try/catch` and log for debugging |
 
-### Advanced Kit — Error Handling
+### Managed Kit — Error Handling
 
-The Advanced Kit surfaces errors through two channels: thrown exceptions on API calls and event-based errors on the SDK instance.
+The Managed Kit surfaces errors through two channels: thrown exceptions on API calls and event-based errors on the SDK instance.
 
 #### API Call Errors
 
@@ -1177,7 +1189,7 @@ try {
 }
 ```
 
-#### Advanced Kit — HTTP Error Reference
+#### Managed Kit — HTTP Error Reference
 
 | Status | Meaning | Common Causes |
 | :--- | :--- | :--- |
@@ -1205,9 +1217,9 @@ sdk.on('disconnect', () => {
 });
 ```
 
-#### Combined Error Handling Pattern (Advanced Kit)
+#### Combined Error Handling Pattern (Managed Kit)
 
-A robust pattern for production agents that handles both API and event errors:
+A robust pattern for production AI agents that handles both API and event errors:
 
 ```typescript
 const sdk = SDK({ serverUrl: process.env.SERVER_URL, apiKey: process.env.API_KEY });
@@ -1245,7 +1257,7 @@ await sdk.connect();
 
 ---
 
-## Plugins (Basic Kit)
+## Plugins (Self-Hosted Kit)
 
 Create custom plugins to hook into the SDK lifecycle.
 
@@ -1269,7 +1281,7 @@ const sdk = new IMessageSDK({ plugins: [myPlugin] });
 
 ---
 
-## Agent Lifecycle (Advanced Kit)
+## Agent Lifecycle (Managed Kit)
 
 The recommended lifecycle for a long-running AI agent:
 
