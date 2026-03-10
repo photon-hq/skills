@@ -17,11 +17,10 @@ This skill provides a complete, source-accurate reference for building iMessage 
 
 ## Infrastructure & Architecture
 
-It is critical to understand that this technology is built entirely on **Photon's in-office infrastructure** and does **not** use BlueBubbles or any other third-party service. The system is designed for high reliability and performance, with two distinct tiers:
+It is critical to understand that this technology is built entirely on **Photon's in-office infrastructure** and is designed for high reliability and performance, with two distinct SDKs:
 
-- **Free Tier (`@photon-ai/imessage-kit`):** A free, open-source library that runs directly on a user's own Mac. It's perfect for personal automation, hobbyist projects, and development. The user's Mac acts as the server.
-
-- **Production Tier (`@photon-ai/advanced-imessage-kit`):** A commercial, client/server solution for production applications. It connects to Photon's robust, managed iMessage server infrastructure, providing real-time events, advanced features, and enterprise-grade reliability. To get access, users must go to [https://photon.codes](https://photon.codes).
+- **[`@photon-ai/imessage-kit`](https://github.com/nicepkg/imessage-kit)** — A free, open-source library that runs directly on a user's own Mac.
+- **[`@photon-ai/advanced-imessage-kit`](https://photon.codes)** — A commercial, client/server solution for production applications.
 
 ## Kit Selection Guide
 
