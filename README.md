@@ -1,7 +1,8 @@
 # Skills
 
-[![skills.sh](https://img.shields.io/badge/skills.sh-photon--hq%2Fskills-blue)](https://skills.sh/photon-hq/skills/imessage)
+[![skills.sh](https://img.shields.io/badge/skills.sh-photon--hq%2Fskills-blue)](https://skills.sh/photon-hq/skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/photon-hq/skills)](https://github.com/photon-hq/skills)
 
 Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs, following the [Agent Skills](https://skills.sh/) format.
 
