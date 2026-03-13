@@ -1,8 +1,12 @@
 ---
 name: chat-adapter-imessage
 description: >
-  Comprehensive guide for using chat-adapter-imessage to connect the Vercel AI SDK (Chat SDK) to iMessage.
-  Covers setup, local vs. remote modes, webhook handling, and all adapter methods.
+  Connect the Vercel AI SDK to iMessage. Build AI agents and assistants that communicate over iMessage using
+  chat-adapter-imessage, the official Photon adapter. Local mode (runs on your Mac) and remote mode (Photon's
+  production infrastructure). Covers createiMessageAdapter, postMessage, editMessage, deleteMessage, react,
+  startGatewayListener, types, and integration with the Chat SDK.
+  Keywords: vercel ai sdk, imessage, chat adapter, ai agent, chatbot, conversational ai, messaging, apple messages,
+  vercel, nextjs, ai assistant, chat sdk, real-time, macos.
 license: MIT
 metadata:
   author: photon-hq
@@ -15,7 +19,7 @@ This skill provides a complete reference for using `chat-adapter-imessage`, the 
 
 ## Overview
 
-The adapter acts as a bridge, allowing you to build AI chatbots and agents with the Vercel AI SDK that can communicate with users over iMessage. It leverages `@photon-ai/imessage-kit` (for local use) and `@photon-ai/advanced-imessage-kit` (for production) under the hood.
+The adapter acts as a bridge, allowing you to build AI agents and assistants with the Vercel AI SDK that communicate with users over iMessage. It leverages `@photon-ai/imessage-kit` (self-hosted) and `@photon-ai/advanced-imessage-kit` (production infrastructure by Photon) under the hood.
 
 ### Key Features
 
@@ -201,7 +205,7 @@ interface iMessageGatewayMessageData {
 
 ### `NativeWebhookPayload`
 
-If using the Basic Kit's native webhook feature, this is the shape of the JSON payload that will be sent to your endpoint. The adapter can process this payload.
+If using the Self-Hosted Kit's native webhook feature, this is the shape of the JSON payload that will be sent to your endpoint. The adapter can process this payload.
 
 ```typescript
 interface NativeWebhookPayload {
