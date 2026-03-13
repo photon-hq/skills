@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs. Skills are packaged instructions that extend agent capabilities for building iMessage-powered applications.
+Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs. Skills are packaged instructions that extend agent capabilities for building iMessage AI agents and applications.
 
 Skills follow the [Agent Skills](https://skills.sh/) format.
 
@@ -8,14 +8,16 @@ Skills follow the [Agent Skills](https://skills.sh/) format.
 
 ### imessage
 
-Full API reference for [`@photon-ai/imessage-kit`](https://github.com/photon-hq/imessage-kit) and [`@photon-ai/advanced-imessage-kit`](https://github.com/photon-hq/advanced-imessage-kit). Covers two ways to integrate iMessage into your product: using your own local iMessage account via Apple’s public APIs, or using Photon’s managed service with additional capabilities.
+Full API reference for [`@photon-ai/imessage-kit`](https://github.com/photon-hq/imessage-kit) (self-hosted, runs on your Mac) and [`@photon-ai/advanced-imessage-kit`](https://github.com/photon-hq/advanced-imessage-kit) (production infrastructure by Photon). Choose the kit that fits how you want to build — self-hosted for full control, or advanced for a managed service that scales to any number of phone numbers.
 
 **Use when:**
-- Building an iMessage bot or automation
+- Building an iMessage AI agent or automation
 - Sending messages, files, or reactions programmatically
 - Listening to real-time message events
 - Managing group chats, scheduling messages, or setting reminders
-- Deploying an iMessage agent to production via [photon.codes](https://photon.codes/spectrum)
+- Deploying an iMessage AI agent to production via [photon.codes](https://photon.codes/spectrum)
+- Forwarding iMessage events to a webhook endpoint via [Photon Webhook](https://github.com/photon-hq/webhook)
+- Giving an MCP-compatible agent full iMessage access via [Photon MCP](https://github.com/photon-hq/mcp) (67 tools)
 
 **What's covered:**
 - Setup and configuration for both kits
@@ -24,6 +26,9 @@ Full API reference for [`@photon-ai/imessage-kit`](https://github.com/photon-hq/
 - Group chat management (create, rename, add/remove participants)
 - Message scheduling, reminders, and recurring messages
 - Polls, Find My integration, FaceTime, and contact cards
+- Photon Webhook — forward events to any HTTP endpoint with HMAC-SHA256 signatures
+- Photon MCP Server — 67 MCP tools for iMessage at `mcp.photon.codes`
+- Security best practices for handling untrusted messages and prompt injection defense
 - Error handling, plugins, graceful shutdown, and common pitfalls
 
 ### chat-adapter-imessage
@@ -50,7 +55,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 **Examples:**
 
 ```bash
-# iMessage automation (Basic + Advanced Kit)
+# iMessage AI agents (Self-Hosted + Advanced Kit)
 npx skills add photon-hq/skills --skill imessage
 
 # Vercel AI SDK iMessage adapter
@@ -64,7 +69,7 @@ Skills are automatically available once installed. The agent will use them when 
 **Examples:**
 
 ```
-Build an iMessage bot that auto-replies to group messages
+Build an iMessage AI agent that auto-replies to group messages
 ```
 
 ```
@@ -73,6 +78,14 @@ Send a scheduled message to a contact every morning at 9am
 
 ```
 Connect my Next.js AI chatbot to iMessage using the Vercel AI SDK
+```
+
+```
+Set up a webhook to receive iMessage events on my server
+```
+
+```
+Give my Claude agent access to iMessage via MCP
 ```
 
 ## Skill Structure
