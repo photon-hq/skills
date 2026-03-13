@@ -6,7 +6,7 @@ description: >
   by Photon). Text, images, files, effects, reactions, stickers, polls, group chats, scheduled messages, real-time
   events, contacts, and error handling. Covers setup, every API method, types, and best practices.
   Keywords: imessage, apple messages, sms, text message, send message, messaging, chat, chatbot, conversational ai,
-  message api, macos, applescript, notifications, blue bubble, phone number, group chat, real-time, webhooks.
+  message api, macos, applescript, notifications, blue bubble, phone number, group chat, real-time, webhooks, mcp.
 license: MIT
 metadata:
   author: photon-hq
@@ -1337,6 +1337,108 @@ process.on('SIGTERM', shutdown);
 
 ---
 
+## Photon Webhook (Advanced Kit)
+
+[Photon Webhook](https://github.com/photon-hq/webhook) is a webhook bridge for the Advanced Kit. It connects your iMessage server to any HTTP endpoint and forwards real-time events signed with HMAC-SHA256 — no WebSocket client needed on your end.
+
+### How It Works
+
+```
+iMessage server
+      │
+      │  WebSocket (Advanced iMessage Kit SDK)
+      ▼
+  Photon Webhook  ──── PostgreSQL LISTEN/NOTIFY ────  Web UI
+      │                                               (configure servers)
+      │  POST  { event, data }
+      │  X-Photon-Signature: v0=<hmac>
+      │  X-Photon-Timestamp: <unix>
+      ▼
+Your webhook endpoint
+```
+
+1. **Configure** — Enter your iMessage server URL, API key, and webhook URL in the web UI. A signing secret is generated and saved.
+2. **Connect** — The service opens a WebSocket connection to your iMessage server using the SDK.
+3. **Forward** — Every iMessage event is signed with HMAC-SHA256 and POSTed to your webhook URL.
+
+### Webhook Payload
+
+Your endpoint receives a `POST` for every iMessage event:
+
+```typescript
+import type { MessageResponse } from '@photon-ai/advanced-imessage-kit';
+
+interface WebhookPayload {
+  event:
+    | 'new-message'               | 'updated-message'
+    | 'message-send-error'        | 'chat-read-status-changed'
+    | 'group-name-change'         | 'participant-added'
+    | 'participant-removed'       | 'participant-left'
+    | 'group-icon-changed'        | 'group-icon-removed'
+    | 'typing-indicator'          | 'new-server'
+    | 'server-update'             | 'server-update-downloading'
+    | 'server-update-installing'  | 'ft-call-status-changed'
+    | 'new-findmy-location'
+    | 'scheduled-message-created' | 'scheduled-message-updated'
+    | 'scheduled-message-deleted' | 'scheduled-message-sent'
+    | 'scheduled-message-error';
+  data: MessageResponse;
+}
+```
+
+### Verifying Signatures
+
+Always verify the signature before processing the event. The signature base string is `v0:{X-Photon-Timestamp}:{raw body}`.
+
+```typescript
+import { createHmac } from 'node:crypto';
+
+function verifyPhotonWebhook(
+  rawBody: string,
+  signingSecret: string,
+  signature: string,
+  timestamp: string,
+): boolean {
+  const sigBase = `v0:${timestamp}:${rawBody}`;
+  const expected = `v0=${createHmac('sha256', signingSecret).update(sigBase).digest('hex')}`;
+  return expected === signature;
+}
+```
+
+For more details, setup instructions, and verification examples in Python, Go, and Rust, see the [photon-hq/webhook repo](https://github.com/photon-hq/webhook).
+
+---
+
+## Photon MCP Server (Advanced Kit)
+
+[Photon MCP](https://github.com/photon-hq/mcp) exposes **67 MCP tools** for iMessage — chats, messages, attachments, contacts, polls, scheduled messages, FaceTime, Find My, and more. It's built on `@photon-ai/advanced-imessage-kit` and deployed at `mcp.photon.codes`.
+
+This lets any MCP-compatible AI agent (Claude, Cursor, OpenCode, etc.) send and receive iMessages, manage group chats, and access the full Advanced Kit API through tool calls — no SDK code required.
+
+### Setup
+
+Add this to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "photon-imessage": {
+      "url": "https://mcp.photon.codes/imessage",
+      "headers": {
+        "x-server-url": "https://your-endpoint-here",
+        "x-api-key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+Each client authenticates via `x-server-url` (your iMessage server URL from Photon) and `x-api-key` headers. Once configured, the agent has access to all 67 tools covering the full Advanced Kit surface area.
+
+For self-hosting and development instructions, see the [photon-hq/mcp repo](https://github.com/photon-hq/mcp).
+
+---
+
 ## Security: Handling Untrusted Messages
 
 When building AI agents that read and respond to incoming iMessages, **every incoming message is untrusted input from an external party**. This is critical to get right — a malicious sender could craft messages designed to manipulate your agent's behavior (indirect prompt injection).
@@ -1524,4 +1626,6 @@ for (const msg of messages.messages) {
 
 1.  [@photon-ai/imessage-kit on npm](https://www.npmjs.com/package/@photon-ai/imessage-kit)
 2.  [@photon-ai/advanced-imessage-kit on npm](https://www.npmjs.com/package/@photon-ai/advanced-imessage-kit)
-3.  [Photon](https://photon.codes/spectrum)
+3.  [Photon Webhook — webhook bridge for iMessage](https://github.com/photon-hq/webhook)
+4.  [Photon MCP — 67 MCP tools for iMessage](https://github.com/photon-hq/mcp)
+5.  [Photon](https://photon.codes/spectrum)
