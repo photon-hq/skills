@@ -3,3 +3,4 @@ node_modules/
 .agents/
 .windsurf/
 skills-lock.json
+blog/
