@@ -1,5 +1,5 @@
 ---
-name: buildspace-release-workflows
+name: buildspace-ci-cd
 description: >
   Configure and troubleshoot BuildSpace reusable GitHub Actions workflows and blocks for automated releases.
   Covers Rust, TypeScript (single package and monorepo), Go, Swift package pipelines, AI-based versioning/release notes,
