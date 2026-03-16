@@ -5,6 +5,7 @@ description: >
   Covers Rust, TypeScript (single package and monorepo), Go, Swift package pipelines, AI-based versioning/release notes,
   README freshness checks, labels, permissions, secrets, dry-run testing, and custom block composition.
   Use when users mention BuildSpace, release automation, reusable workflows, GitHub Actions CI/CD, or publishing to npm/crates/Homebrew.
+  Keywords: buildspace, ci/cd, github actions, release automation, reusable workflows, npm, crates, homebrew, rust, typescript, go, swift, monorepo.
 license: MIT
 metadata:
   author: photon-hq
@@ -72,7 +73,7 @@ When asked to set up BuildSpace in a repo:
 
 1. Detect repo type (Rust, TS single, TS monorepo, Go, Swift).
 2. Confirm publish targets (GitHub only, npm, crates, Jamf, Homebrew tap).
-3. Create a caller workflow in the user repo (`.github/workflows/release.yaml` or `ci.yaml`) with `uses: photon-hq/buildspace/...@main`.
+3. Create a caller workflow in the user repo (`.github/workflows/release.yaml` or `ci.yaml`) with `uses: photon-hq/buildspace/...@v1`.
 4. Wire `with:` inputs and `secrets:` exactly for that workflow.
 5. Add recommended permissions block.
 6. Add `dry-run: true` for first validation run unless the user requests immediate publish.
