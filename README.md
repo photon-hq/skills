@@ -18,6 +18,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 | :--- | :--- | :--- |
 | [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Send and receive iMessages programmatically. Build AI agents, automations, and conversational apps — self-hosted or on Photon's production infrastructure. |
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connect the [Vercel AI SDK](https://sdk.vercel.ai) to iMessage. Local and remote modes, all adapter methods, and gateway events. |
+| [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | `photon-hq/buildspace` | Configure and troubleshoot BuildSpace reusable GitHub Actions workflows for automated releases across Rust, TypeScript, Go, and Swift. |
 
 ---
 
@@ -44,6 +45,16 @@ Adapter that connects the [Vercel AI SDK (Chat)](https://sdk.vercel.ai) to iMess
 
 **Covers:** `createiMessageAdapter` config for local and remote modes · `postMessage`, `editMessage`, `deleteMessage`, `react`, `startGatewayListener` · webhook payload types · feature matrix for Photon server capabilities.
 
+### buildspace-ci-cd
+
+```bash
+npx skills add photon-hq/skills --skill buildspace-ci-cd
+```
+
+Configure and debug [BuildSpace](https://github.com/photon-hq/buildspace)-powered release automation using reusable GitHub Actions workflows and blocks.
+
+**Covers:** workflow selection by project type (Rust, TypeScript, Go, Swift) · required inputs, secrets, and permissions · label-gated release triggers · monorepo handling with topological sorting · cross-platform artifact builds · Homebrew tap and Jamf publishing · README drift detection · dry-run validation · troubleshooting.
+
 ---
 
 ## Usage
@@ -57,6 +68,7 @@ Skills are automatically picked up by supported agents once installed — Cursor
 - *Connect my Next.js AI chatbot to iMessage using the Vercel AI SDK*
 - *Set up a webhook to receive iMessage events on my server*
 - *Give my Claude agent access to iMessage via MCP*
+- *Set up BuildSpace release automation for my TypeScript monorepo*
 
 ---
 
