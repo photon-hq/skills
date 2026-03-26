@@ -10,7 +10,7 @@ description: >
 license: MIT
 metadata:
   author: photon-hq
-  version: '7.0.0'
+  version: '7.1.0'
 ---
 
 # iMessage Skill
@@ -1339,7 +1339,7 @@ process.on('SIGTERM', shutdown);
 
 ## Photon Webhook (Advanced Kit)
 
-[Photon Webhook](https://github.com/photon-hq/webhook) is a webhook bridge for the Advanced Kit. It connects your iMessage server to any HTTP endpoint and forwards real-time events signed with HMAC-SHA256 — no WebSocket client needed on your end.
+[Photon Webhook](https://github.com/photon-hq/webhook) is a webhook bridge for the Advanced Kit. It connects your iMessage server to any HTTP endpoint and forwards real-time events signed with HMAC-SHA256 — no WebSocket client needed on your end. A hosted instance is available at [webhook.photon.codes](https://webhook.photon.codes/).
 
 ### How It Works
 
@@ -1357,9 +1357,13 @@ iMessage server
 Your webhook endpoint
 ```
 
-1. **Configure** — Enter your iMessage server URL, API key, and webhook URL in the web UI. A signing secret is generated and saved.
+1. **Configure** — Enter your iMessage server URL, API key, and webhook URL at [webhook.photon.codes](https://webhook.photon.codes/) (or self-host). A signing secret is generated and saved.
 2. **Connect** — The service opens a WebSocket connection to your iMessage server using the SDK.
 3. **Forward** — Every iMessage event is signed with HMAC-SHA256 and POSTed to your webhook URL.
+
+### When to Use Webhooks
+
+Use Photon Webhook instead of a direct WebSocket connection when you want to receive iMessage events on a stateless HTTP server — serverless functions, existing API backends, or any service that can handle POST requests. It's ideal for integrating iMessage events into pipelines that already use webhooks (Slack bots, CRM triggers, logging services, n8n/Zapier flows) without maintaining a persistent WebSocket client.
 
 ### Webhook Payload
 
