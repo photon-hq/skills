@@ -15,7 +15,7 @@ description: >
 license: MIT
 metadata:
   author: photon-hq
-  version: '7.2.0'
+  version: '7.3.0'
 ---
 
 # iMessage Skill
@@ -1409,9 +1409,21 @@ interface WebhookPayload {
 }
 ```
 
+### HTTP Headers
+
+Every webhook POST includes these headers:
+
+| Header | Value | Purpose |
+| :--- | :--- | :--- |
+| `Content-Type` | `application/json` | Payload format |
+| `X-Photon-Signature` | `v0=<64-char hex>` | HMAC-SHA256 signature for verification |
+| `X-Photon-Timestamp` | `<unix seconds>` | Signing timestamp (use for replay protection) |
+
 ### Verifying Signatures
 
-Always verify the signature before processing the event. The signature base string is `v0:{X-Photon-Timestamp}:{raw body}`.
+Always verify the signature **before** processing the event. Use the raw request body string — do not parse then re-stringify. The signature base string is `v0:{X-Photon-Timestamp}:{raw body}`.
+
+**TypeScript**
 
 ```typescript
 import { createHmac } from 'node:crypto';
@@ -1428,7 +1440,141 @@ function verifyPhotonWebhook(
 }
 ```
 
-For more details, setup instructions, and verification examples in Python, Go, and Rust, see the [photon-hq/webhook repo](https://github.com/photon-hq/webhook).
+**Python**
+
+```python
+import hashlib, hmac
+
+def verify_photon_webhook(raw_body, signing_secret, signature, timestamp):
+    sig_base = f"v0:{timestamp}:{raw_body}"
+    expected = "v0=" + hmac.new(
+        signing_secret.encode(), sig_base.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+**Go**
+
+```go
+func verifyPhotonWebhook(rawBody, signingSecret, signature, timestamp string) bool {
+    sigBase := fmt.Sprintf("v0:%s:%s", timestamp, rawBody)
+    mac := hmac.New(sha256.New, []byte(signingSecret))
+    mac.Write([]byte(sigBase))
+    expected := "v0=" + hex.EncodeToString(mac.Sum(nil))
+    return hmac.Equal([]byte(expected), []byte(signature))
+}
+```
+
+**Rust**
+
+```rust
+fn verify_photon_webhook(raw_body: &str, signing_secret: &str, signature: &str, timestamp: &str) -> bool {
+    let sig_base = format!("v0:{}:{}", timestamp, raw_body);
+    let mut mac = Hmac::<Sha256>::new_from_slice(signing_secret.as_bytes()).unwrap();
+    mac.update(sig_base.as_bytes());
+    format!("v0={}", hex::encode(mac.finalize().into_bytes())) == signature
+}
+```
+
+### Webhook REST API
+
+Photon Webhook exposes a REST API for programmatic webhook management (available on both the hosted instance at `webhook.photon.codes` and self-hosted deployments).
+
+#### Register or Update a Webhook
+
+```
+POST /api/webhooks
+Content-Type: application/json
+```
+
+```json
+{
+  "serverUrl": "https://your-imessage-server.com",
+  "apiKey": "your-api-key",
+  "webhookUrl": "https://your-endpoint.com/hook"
+}
+```
+
+Verifies server credentials before saving. Returns the webhook ID and signing secret.
+
+```json
+{ "id": "<uuid>", "signingSecret": "<64-char hex>" }
+```
+
+| Status | Meaning |
+| :--- | :--- |
+| `201` | Created |
+| `200` | Already existed (signing secret unchanged unless API key changed) |
+| `401` | Invalid server URL or API key |
+
+#### List Webhooks for a Server
+
+```
+GET /api/webhooks?serverUrl=<url>&apiKey=<key>
+```
+
+The API key can also be passed as an `x-api-key` header. Verifies credentials before returning.
+
+```json
+[
+  {
+    "id": "<uuid>",
+    "serverUrl": "https://your-imessage-server.com",
+    "webhookUrl": "https://your-endpoint.com/hook"
+  }
+]
+```
+
+#### Delete a Specific Webhook
+
+```
+DELETE /api/webhooks/<id>
+```
+
+Returns `204 No Content`. Returns `404` if webhook not found.
+
+#### Delete All Webhooks for a Server
+
+```
+DELETE /api/webhooks?serverUrl=<url>&apiKey=<key>
+```
+
+Verifies credentials, then deletes every webhook registered to that server.
+
+```json
+{ "deleted": 3 }
+```
+
+### Self-Hosting Photon Webhook
+
+Prerequisites: Bun >= 1.1, PostgreSQL 15+, an Advanced iMessage Kit server URL and API key.
+
+```bash
+git clone https://github.com/photon-hq/webhook.git
+cd webhook
+bun install
+
+cp .env.example .env
+# Set DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webhook
+
+bun --filter @turbobun/db run db:migrate
+
+# Development — runs both apps
+bun dev
+
+# Or individually
+bun --filter ./apps/web dev   # Next.js UI → http://localhost:3000
+bun --filter ./apps/api dev   # API service (background, no HTTP port)
+```
+
+For production deployment with Docker:
+
+```bash
+docker network create dokploy-network
+docker-compose up --build
+```
+
+The web container runs database migrations automatically on startup. See the [photon-hq/webhook repo](https://github.com/photon-hq/webhook) for full details.
 
 ---
 
