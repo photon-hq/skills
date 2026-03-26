@@ -68,6 +68,7 @@ Skills are automatically picked up by supported agents once installed — Cursor
 - *Connect my Next.js AI chatbot to iMessage using the Vercel AI SDK*
 - *Set up a webhook to receive iMessage events on my server*
 - *Give my Claude agent access to iMessage via MCP*
+- *Send an iMessage using curl from my Python script*
 - *Set up BuildSpace release automation for my TypeScript monorepo*
 
 ---
@@ -76,8 +77,9 @@ Skills are automatically picked up by supported agents once installed — Cursor
 
 | Project | Description |
 | :--- | :--- |
-| [Photon Webhook](https://github.com/photon-hq/webhook) | Forward iMessage events to any HTTP endpoint, signed with HMAC-SHA256 |
-| [Photon MCP](https://github.com/photon-hq/mcp) | 67 MCP tools for iMessage at `mcp.photon.codes` |
+| [Photon Webhook](https://github.com/photon-hq/webhook) | Forward iMessage events to any HTTP endpoint, signed with HMAC-SHA256 — [webhook.photon.codes](https://webhook.photon.codes/) |
+| [Photon MCP](https://github.com/photon-hq/mcp) | 67 MCP tools for iMessage — [mcp.photon.codes](https://mcp.photon.codes) |
+| [HTTP Proxy](https://github.com/photon-hq/advanced-imessage-http-proxy) | RESTful API for iMessage with curl access and Swagger docs — [imessage-swagger.photon.codes](https://imessage-swagger.photon.codes/swagger) |
 | [Photon](https://photon.codes/spectrum) | Production iMessage infrastructure — API keys and server URLs |
 
 ## License
