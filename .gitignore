@@ -1,0 +1,6 @@
+node_modules/
+.agent/
+.agents/
+.windsurf/
+skills-lock.json
+blog/

@@ -89,7 +89,7 @@ When asked to set up BuildSpace in a repo:
 
 1. Detect repo type (Rust, TS single, TS monorepo, Go, Swift, macOS pkg, dylib).
 2. Confirm publish targets (GitHub only, npm, crates, Jamf, Homebrew tap).
-3. Create a caller workflow in the user repo (`.github/workflows/release.yaml` or `ci.yaml`) with `uses: photon-hq/buildspace/...@main`.
+3. Create a caller workflow in the user repo (`.github/workflows/release.yaml` or `ci.yaml`) with `uses: photon-hq/buildspace/...@v1`.
 4. Wire `with:` inputs and `secrets:` exactly for that workflow.
 5. Add recommended permissions block.
 6. Add `dry-run: true` for first validation run unless the user requests immediate publish.
