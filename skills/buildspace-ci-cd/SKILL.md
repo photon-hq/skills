@@ -4,12 +4,12 @@ description: >
   Configure and troubleshoot BuildSpace reusable GitHub Actions workflows and blocks for automated releases.
   Covers Rust, TypeScript (single package and monorepo), Go, Swift package, macOS .pkg (binary and payload-only),
   dylib (Xcode and Makefile), generic release, AI-based versioning/release notes, README freshness checks,
-  skills documentation checks, labels, permissions, secrets, Homebrew tap updates, Jamf uploads,
+  skills documentation checks, automated documentation updates via Claude Code, labels, permissions, secrets, Homebrew tap updates, Jamf uploads,
   dry-run testing, and custom block composition.
   Use when users mention BuildSpace, release automation, reusable workflows, GitHub Actions CI/CD,
-  or publishing to npm/crates/Homebrew/Jamf.
+  or publishing to npm/crates/Homebrew/Jamf, or automated documentation updates.
   Keywords: buildspace, ci/cd, github actions, release automation, reusable workflows, npm, crates,
-  homebrew, rust, typescript, go, swift, monorepo, dylib, macOS, pkg, jamf, skills.
+  homebrew, rust, typescript, go, swift, monorepo, dylib, macOS, pkg, jamf, skills, claude, anthropic, docs.
 license: MIT
 metadata:
   author: photon-hq
@@ -48,6 +48,7 @@ Pick exactly one primary workflow based on project type:
 | Generic release (version + GitHub Release only) | `release.yaml` | PR label `release` |
 | README freshness check on PRs | `check-readme.yaml` | Every PR |
 | Skills documentation freshness check on PRs | `check-skills.yaml` | Every PR |
+| Automated docs update on release | `update-docs.yaml` | Release published |
 
 ## Required Inputs, Secrets, and Permissions
 
@@ -55,12 +56,13 @@ Always verify these before writing YAML:
 
 1. **Inputs**: service/package names, paths, build command, package lists, Homebrew tap info, Jamf config.
 2. **Secrets**:
-   - Always required for AI features: `OPENAI_API_KEY`
+   - Release workflow AI features: `OPENAI_API_KEY`
+   - Update Documentation workflow: `ANTHROPIC_API_KEY`
    - npm publishing: `NPM_TOKEN`
    - crates publishing: `CARGO_REGISTRY_TOKEN`
    - Swift compile-time env vars: `SECRET_ENV_VARS`
    - Jamf upload: `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET`
-   - Protected-branch pushes or Homebrew tap updates: `APP_ID` + `APP_PRIVATE_KEY`
+   - Update Documentation (required), protected-branch pushes, or Homebrew tap updates: `APP_ID` + `APP_PRIVATE_KEY`
    - Skills documentation check (private repos): `SKILLS_REPO_TOKEN`
    - Note: `DEVELOPER_ID_INSTALLER_NAME` is **deprecated and ignored** — packages are always unsigned.
 3. **Permissions**:
@@ -378,6 +380,26 @@ Runs on every PR to check if skills documentation (in a separate skills repo) is
 | `OPENAI_API_KEY` | Yes | For AI-powered skills analysis |
 | `SKILLS_REPO_TOKEN` | No | GitHub token for skills repo (defaults to `GITHUB_TOKEN`; use PAT for private repos) |
 
+### update-docs.yaml
+
+Runs when a release is published. Uses Claude Code Action (`anthropics/claude-code-action@v1`) to analyze the changes between the current and previous release, then submits a PR to a documentation repository with any necessary updates. The workflow automatically generates a cross-repo GitHub App token from org-level `APP_ID` and `APP_PRIVATE_KEY` secrets.
+
+**Inputs:**
+
+| Input | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `service-name` | string | Yes | — | Name of the service being released |
+| `docs-repo` | string | No | `photon-hq/docs` | Target documentation repository (`owner/repo`) |
+| `docs-branch` | string | No | `main` | Base branch of the docs repo |
+
+**Secrets (via `secrets: inherit` from org):**
+
+| Secret | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for Claude Code |
+| `APP_ID` | Yes | GitHub App ID for creating PRs on the docs repo |
+| `APP_PRIVATE_KEY` | Yes | GitHub App private key |
+
 ## Monorepo-Specific Guidance
 
 For `typescript-monorepo-release`:
@@ -434,6 +456,20 @@ Use `check-skills.yaml` for skills documentation drift detection:
 - Requires `OPENAI_API_KEY` and PR write permission for comments.
 - For private skills repos, provide `SKILLS_REPO_TOKEN` (PAT with repo access).
 
+
+## Update Documentation Guidance
+
+Use `update-docs.yaml` for automated docs PRs on release:
+
+- Triggered by `release: published` events (not PR labels).
+- Analyzes the git diff between the current and previous release tag.
+- Uses Claude Code to read existing docs, identify what needs updating, and make changes.
+- Creates a PR to the target docs repo (default: `photon-hq/docs`) if changes are needed.
+- Rerun-safe: force-pushes to the same branch and reuses existing open PRs.
+- Security: token is stripped from `.git/config` before Claude runs; prompt forbids reading secrets.
+- Requires `ANTHROPIC_API_KEY`, `APP_ID`, and `APP_PRIVATE_KEY` as org-level secrets.
+- Caller repos just need `secrets: inherit` — no per-repo secret configuration.
+
 ## Blocks Reference
 
 All blocks live under `.github/blocks/`. Workflows compose these internally — use them directly only for custom pipelines.
@@ -454,6 +490,13 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 | `comment-on-pr` | `.github/blocks/comment-on-pr/action.yaml` | Post or update a single PR comment (idempotent via `comment-key`) |
 | `check-readme` | `.github/blocks/check-readme/action.yaml` | AI-powered README freshness check |
 | `check-skills` | `.github/blocks/check-skills/action.yaml` | AI-powered skills documentation freshness check |
+
+
+### Documentation
+
+| Block | Path | Purpose |
+|---|---|---|
+| `update-docs` | `.github/blocks/update-docs/action.yaml` | Clone docs repo, run Claude Code Action to update docs, create PR if changes were made |
 
 ### Build Blocks
 
@@ -494,6 +537,7 @@ If release did not run:
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
 - For Jamf uploads, confirm `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` are set and `jamf-url` is a valid Jamf Pro URL.
 - For dylib builds, confirm Xcode workspace/scheme or Makefile exists and produces expected output.
+- For `update-docs`, confirm `ANTHROPIC_API_KEY`, `APP_ID`, and `APP_PRIVATE_KEY` org secrets exist. Confirm the GitHub App has write access to the docs repo. Use `secrets: inherit` in the caller.
 
 ## Output Format for Agent Responses
 
