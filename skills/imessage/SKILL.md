@@ -1066,11 +1066,15 @@ E.164 format: `+` followed by country code and subscriber number, digits only, n
 
 ```typescript
 function toE164(phone: string, defaultCountryCode = '1'): string {
-  const digits = phone.replace(/\D/g, '');
-  if (phone.startsWith('+')) return `+${digits}`;
+  const raw = phone.trim();
+  const digits = raw.replace(/\D/g, '');
+
+  if (raw.startsWith('+')) return `+${digits}`;
+  if (raw.startsWith('00')) return `+${digits.slice(2)}`;
   if (digits.length === 10) return `+${defaultCountryCode}${digits}`;
   if (digits.length === 11 && digits.startsWith(defaultCountryCode)) return `+${digits}`;
-  return `+${digits}`;
+
+  throw new Error(`Cannot normalize to E.164: ${phone}`);
 }
 
 function isValidE164(phone: string): boolean {
