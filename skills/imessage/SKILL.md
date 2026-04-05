@@ -1244,6 +1244,52 @@ sdk.on('disconnect', () => {
 });
 ```
 
+#### Reconnection with Exponential Backoff
+
+**Never use a fixed-delay reconnect loop.** A flat `setTimeout(() => sdk.connect(), 5000)` hammers the server during extended outages and never gives up. Always use exponential backoff with jitter and a max retry limit.
+
+```typescript
+function createReconnect(sdk: any, opts?: { maxRetries?: number; baseMs?: number; maxMs?: number }) {
+  const maxRetries = opts?.maxRetries ?? 10;
+  const baseMs = opts?.baseMs ?? 1_000;
+  const maxMs = opts?.maxMs ?? 60_000;
+  let attempt = 0;
+
+  return {
+    retry() {
+      if (attempt >= maxRetries) {
+        console.error(`[Reconnect] Giving up after ${maxRetries} attempts`);
+        process.exit(1);
+      }
+      const delay = Math.min(baseMs * 2 ** attempt, maxMs);
+      const jitter = delay * (0.5 + Math.random() * 0.5);
+      attempt++;
+      console.warn(`[Reconnect] Attempt ${attempt}/${maxRetries} in ${Math.round(jitter)}ms`);
+      setTimeout(() => sdk.connect(), jitter);
+    },
+    reset() { attempt = 0; }
+  };
+}
+```
+
+Wire it into the SDK lifecycle:
+
+```typescript
+const reconnect = createReconnect(sdk);
+sdk.on('ready', () => reconnect.reset());
+sdk.on('disconnect', () => reconnect.retry());
+```
+
+| Parameter | Default | Purpose |
+| :--- | :--- | :--- |
+| `maxRetries` | `10` | Stop retrying after this many consecutive failures |
+| `baseMs` | `1000` | Starting delay (doubles each attempt) |
+| `maxMs` | `60000` | Cap on the delay between retries |
+
+The jitter randomizes each delay between 50-100% of the computed value to prevent multiple disconnected clients from thundering-herding the server at the same instant.
+
+> **Agents MUST use `createReconnect()` (or equivalent bounded backoff) instead of a fixed `setTimeout` for all `disconnect` handlers.** Every code example in this skill uses this pattern.
+
 #### Combined Error Handling Pattern (Advanced Kit)
 
 A robust pattern for production AI agents that handles both API and event errors:
@@ -1306,54 +1352,6 @@ const myPlugin = definePlugin({
 
 const sdk = new IMessageSDK({ plugins: [myPlugin] });
 ```
-
----
-
-## Reconnection with Exponential Backoff (Advanced Kit)
-
-**Never use a fixed-delay reconnect loop.** A flat `setTimeout(() => sdk.connect(), 5000)` hammers the server during extended outages and never gives up. Always use exponential backoff with jitter and a max retry limit.
-
-```typescript
-function createReconnect(sdk: any, opts?: { maxRetries?: number; baseMs?: number; maxMs?: number }) {
-  const maxRetries = opts?.maxRetries ?? 10;
-  const baseMs = opts?.baseMs ?? 1_000;
-  const maxMs = opts?.maxMs ?? 60_000;
-  let attempt = 0;
-
-  return {
-    retry() {
-      if (attempt >= maxRetries) {
-        console.error(`[Reconnect] Giving up after ${maxRetries} attempts`);
-        process.exit(1);
-      }
-      const delay = Math.min(baseMs * 2 ** attempt, maxMs);
-      const jitter = delay * (0.5 + Math.random() * 0.5);
-      attempt++;
-      console.warn(`[Reconnect] Attempt ${attempt}/${maxRetries} in ${Math.round(jitter)}ms`);
-      setTimeout(() => sdk.connect(), jitter);
-    },
-    reset() { attempt = 0; }
-  };
-}
-```
-
-Wire it into the SDK lifecycle:
-
-```typescript
-const reconnect = createReconnect(sdk);
-sdk.on('ready', () => reconnect.reset());
-sdk.on('disconnect', () => reconnect.retry());
-```
-
-| Parameter | Default | Purpose |
-| :--- | :--- | :--- |
-| `maxRetries` | `10` | Stop retrying after this many consecutive failures |
-| `baseMs` | `1000` | Starting delay (doubles each attempt) |
-| `maxMs` | `60000` | Cap on the delay between retries |
-
-The jitter randomizes each delay between 50-100% of the computed value to prevent multiple disconnected clients from thundering-herding the server at the same instant.
-
-> **Agents MUST use `createReconnect()` (or equivalent bounded backoff) instead of a fixed `setTimeout` for all `disconnect` handlers.** Every code example in this skill uses this pattern.
 
 ---
 
