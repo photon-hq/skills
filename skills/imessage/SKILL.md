@@ -1047,6 +1047,59 @@ interface FindMyLocationItem {
 | Auto-detect (Advanced) | `any;-;<address>` | `any;-;+1234567890` |
 | Group (Advanced) | `iMessage;+;<guid>` | `iMessage;+;chat45e2b868...` |
 
+### Phone Number Formatting (E.164)
+
+**All phone numbers MUST be in E.164 format before sending.** Messages sent to improperly formatted numbers will silently fail to deliver — no error is thrown, but the recipient never receives the message.
+
+E.164 format: `+` followed by country code and subscriber number, digits only, no spaces, dashes, or parentheses. Maximum 15 digits total.
+
+| Input | Valid E.164? | Problem |
+| :--- | :--- | :--- |
+| `+14155551234` | Yes | |
+| `+441234567890` | Yes | |
+| `4155551234` | **No** | Missing `+` and country code |
+| `(415) 555-1234` | **No** | Contains formatting characters |
+| `+1 415 555 1234` | **No** | Contains spaces |
+| `1234567890` | **No** | Missing `+` and country code |
+
+**Always normalize phone numbers before passing them to any SDK method.** Use this helper:
+
+```typescript
+function toE164(phone: string, defaultCountryCode = '1'): string {
+  const raw = phone.trim();
+  const digits = raw.replace(/\D/g, '');
+
+  if (raw.startsWith('+')) return `+${digits}`;
+  if (raw.startsWith('00')) return `+${digits.slice(2)}`;
+  if (digits.length === 10) return `+${defaultCountryCode}${digits}`;
+  if (digits.length === 11 && digits.startsWith(defaultCountryCode)) return `+${digits}`;
+
+  throw new Error(`Cannot normalize to E.164: ${phone}`);
+}
+
+function isValidE164(phone: string): boolean {
+  return /^\+[1-9]\d{6,14}$/.test(phone);
+}
+```
+
+Usage:
+
+```typescript
+const recipient = toE164('(415) 555-1234');
+if (!isValidE164(recipient)) throw new Error(`Invalid phone number: ${recipient}`);
+
+// Self-Hosted Kit
+await sdk.send(recipient, 'Hello!');
+
+// Advanced Kit
+await sdk.messages.sendMessage({
+  chatGuid: `iMessage;-;${recipient}`,
+  message: 'Hello!'
+});
+```
+
+> **Agents MUST call `toE164()` on any user-provided phone number before using it in `sdk.send()`, `sdk.messages.sendMessage()`, chatGuid construction, or any API/HTTP Proxy call.** Do not assume the user's input is already formatted correctly.
+
 ### Message Effects (Advanced Kit)
 
 | Effect | `effectId` |
@@ -2308,6 +2361,7 @@ for (const msg of messages.messages) {
 | Sending raw markdown in iMessage | Bold markers, headers, backticks look broken in chat bubbles | Strip markdown before sending with `stripMarkdown()` |
 | No typing indicator during LLM processing | User thinks the agent is dead/broken | Use `startTyping` with 25s refresh interval in `try...finally` |
 | Not acknowledging received messages | User doesn't know if the agent got their message | Auto-tapback (e.g., `like`) on receipt before processing |
+| Sending to phone numbers without E.164 normalization | Messages silently fail to deliver — no error, but recipient never gets them | Always run through `toE164()` and validate with `isValidE164()` before sending |
 
 ---
 
