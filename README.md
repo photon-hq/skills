@@ -19,6 +19,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 | [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Send and receive iMessages programmatically. Build AI agents, automations, and conversational apps — self-hosted or on Photon's production infrastructure. |
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connect the [Vercel AI SDK](https://sdk.vercel.ai) to iMessage. Local and remote modes, all adapter methods, and gateway events. |
 | [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | `photon-hq/buildspace` | Configure and troubleshoot BuildSpace reusable GitHub Actions workflows for automated releases across Rust, TypeScript, Go, and Swift. |
+| [`spectrum-agent-patterns`](./skills/spectrum-agent-patterns/SKILL.md) | `spectrum-ts` | Architecture patterns for production-grade messaging agents on Spectrum — five-stage inbound pipeline, in-flight cancellation, idempotent retries, per-resource memory scope. |
 
 ---
 
@@ -55,6 +56,16 @@ Configure and debug [BuildSpace](https://github.com/photon-hq/buildspace)-powere
 
 **Covers:** workflow selection by project type (Rust, TypeScript, Go, Swift) · required inputs, secrets, and permissions · label-gated release triggers · monorepo handling with topological sorting · cross-platform artifact builds · Homebrew tap and Jamf publishing · README drift detection · dry-run validation · troubleshooting.
 
+### spectrum-agent-patterns
+
+```bash
+npx skills add photon-hq/skills --skill spectrum-agent-patterns
+```
+
+The architecture Photon uses internally to ship agents that live natively inside iMessage, WhatsApp Business, and other IM apps with [Spectrum](https://github.com/photon-hq/spectrum-ts).
+
+**Covers:** the five-stage inbound pipeline (debounce → batch flush → mark as read → generate → send) · in-flight job table for cancellable stages · drain-in-handler rule and carry-forward semantics · in-flight cancellation with abort signals · idempotent retries via stable client GUIDs · `startIndex` resume cursor · per-resource memory scope (`resourceId` vs `threadId`) · job failure audit log.
+
 ---
 
 ## Usage
@@ -70,6 +81,7 @@ Skills are automatically picked up by supported agents once installed — Cursor
 - *Give my Claude agent access to iMessage via MCP*
 - *Send an iMessage using curl from my Python script*
 - *Set up BuildSpace release automation for my TypeScript monorepo*
+- *Design the message-handling pipeline for my Spectrum agent — debouncing bursts, cancellation, idempotent retries*
 
 ---
 
