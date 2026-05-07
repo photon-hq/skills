@@ -36,8 +36,6 @@ Spectrum is Photon's unified messaging SDK. Write your handler logic once agains
 
 The current SDK is **[`spectrum-ts`](https://github.com/photon-hq/spectrum-ts)** (TypeScript). Spectrum is multi-platform by design and **multi-language is on the roadmap** — additional language SDKs (e.g. Python, Go, Swift) will join the family. The architecture, primitives, and patterns described in this skill are intended to be language-neutral; code samples in the topic files are currently TypeScript and are flagged where the API surface is language-specific (imports, syntax, runtime types).
 
-> Spectrum is in early preview. APIs may change between releases.
-
 ## How this skill is organized
 
 Each topic lives in its own file in this directory. Read the file relevant to the user's question.
