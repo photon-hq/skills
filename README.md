@@ -19,6 +19,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 | [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Send and receive iMessages programmatically. Build AI agents, automations, and conversational apps — self-hosted or on Photon's production infrastructure. |
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connect the [Vercel AI SDK](https://sdk.vercel.ai) to iMessage. Local and remote modes, all adapter methods, and gateway events. |
 | [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | `photon-hq/buildspace` | Configure and troubleshoot BuildSpace reusable GitHub Actions workflows for automated releases across Rust, TypeScript, Go, and Swift. |
+| [`spectrum`](./skills/spectrum/SKILL.md) | `spectrum-ts` | Photon's unified messaging SDK for TypeScript. Write your handler once and ship across iMessage, WhatsApp Business, terminal, or a custom platform — plus production architecture patterns. |
 
 ---
 
@@ -55,6 +56,16 @@ Configure and debug [BuildSpace](https://github.com/photon-hq/buildspace)-powere
 
 **Covers:** workflow selection by project type (Rust, TypeScript, Go, Swift) · required inputs, secrets, and permissions · label-gated release triggers · monorepo handling with topological sorting · cross-platform artifact builds · Homebrew tap and Jamf publishing · README drift detection · dry-run validation · troubleshooting.
 
+### spectrum
+
+```bash
+npx skills add photon-hq/skills --skill spectrum
+```
+
+[`spectrum-ts`](https://github.com/photon-hq/spectrum-ts) is Photon's unified messaging SDK for TypeScript. Write your handler logic once against a single `app.messages` stream and ship it across iMessage, WhatsApp Business, your terminal, or a custom platform you build yourself.
+
+**Covers:** installation and the `Spectrum()` app instance · core primitives (Message, Space, User, Platform provider) · receiving messages and narrowing content (text, attachment, voice, contact, richlink, reaction, poll, group, custom) · the full content builder family · spaces, typing indicators, `responding` · reactions, tapbacks, and threaded replies · platform narrowing · built-in providers (iMessage cloud/local/dedicated with message effects, Terminal TUI, WhatsApp Business 1:1) · custom event streams and graceful shutdown · authoring custom platforms with `definePlatform` · production architecture patterns (debounce pipeline, in-flight cancellation, carry-forward, idempotent retries, per-resource memory, job-failure audit log).
+
 ---
 
 ## Usage
@@ -70,6 +81,8 @@ Skills are automatically picked up by supported agents once installed — Cursor
 - *Give my Claude agent access to iMessage via MCP*
 - *Send an iMessage using curl from my Python script*
 - *Set up BuildSpace release automation for my TypeScript monorepo*
+- *Build a multi-platform agent with Spectrum that handles iMessage, WhatsApp, and a terminal test harness from one handler*
+- *Design the message-handling pipeline for my Spectrum agent — debouncing bursts, cancellation, idempotent retries*
 
 ---
 
