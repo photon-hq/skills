@@ -39,7 +39,7 @@ Pick exactly one primary workflow based on project type:
 | TypeScript/JavaScript single package | `typescript-service-release.yaml` | PR label `release` |
 | TypeScript monorepo (multiple packages) | `typescript-monorepo-release.yaml` | PR label `release` |
 | Go binary | `go-service-release.yaml` | PR label `release` |
-| Swift macOS `.pkg` (with compiled binary) | `swift-release.yml` | PR label `release` |
+| Swift macOS `.pkg` (with compiled binary) | `swift-release.yml` | PR label `release` or `prerelease` |
 | macOS `.pkg` without binary (payload/scripts only) | `pkg-release.yml` | PR label `release` |
 | macOS `.pkg` PR build (payload/scripts only) | `pkg-release-pr.yml` | Every PR commit |
 | Swift macOS `.pkg` PR build previews | `swift-pkg-pr.yml` | Every PR commit |
@@ -80,7 +80,8 @@ Behavior nuance to keep accurate:
 
 - `typescript-monorepo-release` supports prerelease path directly.
 - `typescript-service-release`, `rust-service-release`, and `go-service-release` gate release jobs on `release` (or forced input), and treat prerelease as flavor once release is active.
-- `swift-release`, `pkg-release`, `dylib-release`, and `makefile-dylib-release` check only `release`.
+- `swift-release` checks both `release` and `prerelease` labels (like Rust/TS/Go workflows) and supports `prerelease` and `release` boolean inputs to force either mode.
+- `pkg-release`, `dylib-release`, and `makefile-dylib-release` check only `release`.
 - `release.yaml` (generic) checks `release` label and supports a `release` boolean input to force.
 
 ## Implementation Procedure
@@ -213,7 +214,7 @@ Complete release pipeline for Go binaries: label check, AI version + release not
 
 ### swift-release.yml
 
-Complete release pipeline for macOS `.pkg` distribution with a compiled Swift binary: label check, AI version + release notes, Swift build, `.pkg` creation (unsigned), GitHub Release, optional Jamf upload.
+Complete release pipeline for macOS `.pkg` distribution with a compiled Swift binary: label check, AI version + release notes, Swift build, `.pkg` creation (unsigned), GitHub Release, optional Jamf upload. Supports pre-releases (rc) — GitHub pre-release only, no Jamf deploy.
 
 **Inputs:**
 
@@ -223,6 +224,9 @@ Complete release pipeline for macOS `.pkg` distribution with a compiled Swift bi
 | `identifier` | string | Yes | — | Package identifier (e.g., `com.example.mytool`) |
 | `scripts-path` | string | No | `""` | Path to scripts directory with preinstall/postinstall scripts |
 | `payload-path` | string | No | `""` | Path to additional payload directory (mirrors install root) |
+| `labels-to-check` | string | No | `["release", "prerelease"]` | JSON array of PR labels to check. `release` cuts a stable release; `prerelease` cuts an rc (GitHub pre-release only, no Jamf). |
+| `prerelease` | boolean | No | `false` | Force a pre-release (rc). Overrides labels. Builds `.pkg`, attaches to a GitHub pre-release, skips Jamf upload. |
+| `release` | boolean | No | `false` | Force a stable release. Overrides labels. |
 | `jamf-url` | string | No | `""` | Jamf Pro instance URL (leave empty to skip) |
 | `jamf-package-priority` | string | No | `""` | Package priority in Jamf Pro |
 | `jamf-package-name` | string | No | `""` | Package name to match in Jamf Pro |
@@ -405,6 +409,7 @@ For `typescript-monorepo-release`:
 ## Swift / macOS .pkg Notes
 
 - `swift-release` builds the Swift binary, creates an unsigned `.pkg`, creates GitHub Release, and optionally uploads to Jamf.
+- `swift-release` supports pre-releases (release candidates). Use the `prerelease` label or `prerelease: true` input to cut an rc — this creates a GitHub pre-release with the `.pkg` attached but **skips Jamf upload**, so the build can be tested manually before shipping to the fleet.
 - `pkg-release` is for `.pkg` packages that contain **no compiled binary** — only payload files and/or scripts.
 - `swift-pkg-pr` and `pkg-release-pr` are the PR preview counterparts (build on every commit, comment on PR).
 - Packages are **always unsigned** (`DEVELOPER_ID_INSTALLER_NAME` is deprecated and ignored).
