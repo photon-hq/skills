@@ -472,7 +472,7 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 
 | Block | Path | Purpose |
 |---|---|---|
-| `publish-npm` | `.github/blocks/publish-npm/action.yaml` | Publish single package to npm |
+| `publish-npm` | `.github/blocks/publish-npm/action.yaml` | Publish single package to npm (verifies version lands on registry) |
 | `publish-npm-packages` | `.github/blocks/publish-npm-packages/action.yaml` | Publish multiple monorepo packages to npm in dependency order |
 | `publish-crates` | `.github/blocks/publish-crates/action.yaml` | Publish workspace crates to crates.io in order |
 | `bump-npm-version` | `.github/blocks/bump-npm-version/action.yaml` | Bump version in `package.json` and push |
@@ -491,6 +491,8 @@ If release did not run:
 - Confirm caller workflow points to correct reusable workflow path.
 - For monorepos, confirm `packages` JSON is valid and paths exist.
 - For publish failures, test with `dry-run: true` and verify auth token scopes.
+- `publish-npm` automatically verifies the published version lands on the npm registry (with retries). If verification fails, common causes are: expired/revoked NPM_TOKEN, token lacking write scope, OIDC Trusted Publishing not configured, or publisher CLI swallowing npm's non-zero exit.
+- If a publish step exits 0 but the workflow fails with "npm emitted error lines", the publisher CLI (e.g., `bunx clean-publish`) is swallowing npm's exit code. The `publish-npm` block scans output for `npm error` / `npm ERR!` lines and fails explicitly in this case.
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
 - For Jamf uploads, confirm `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` are set and `jamf-url` is a valid Jamf Pro URL.
 - For dylib builds, confirm Xcode workspace/scheme or Makefile exists and produces expected output.
