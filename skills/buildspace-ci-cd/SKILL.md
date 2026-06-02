@@ -60,7 +60,7 @@ Always verify these before writing YAML:
    - crates publishing: `CARGO_REGISTRY_TOKEN`
    - Swift compile-time env vars: `SECRET_ENV_VARS`
    - Jamf upload: `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET`
-   - Protected-branch pushes or Homebrew tap updates: `APP_ID` + `APP_PRIVATE_KEY`
+   - Protected-branch pushes, Homebrew tap updates, or private SPM dependencies: `APP_ID` + `APP_PRIVATE_KEY`
    - Skills documentation check (private repos): `SKILLS_REPO_TOKEN`
    - Note: `DEVELOPER_ID_INSTALLER_NAME` is **deprecated and ignored** — packages are always unsigned.
 3. **Permissions**:
@@ -226,6 +226,8 @@ Complete release pipeline for macOS `.pkg` distribution with a compiled Swift bi
 | `jamf-url` | string | No | `""` | Jamf Pro instance URL (leave empty to skip) |
 | `jamf-package-priority` | string | No | `""` | Package priority in Jamf Pro |
 | `jamf-package-name` | string | No | `""` | Package name to match in Jamf Pro |
+| `entitlements` | string | No | `""` | Path to an entitlements plist for ad-hoc codesigning the built binary |
+| `private-deps` | boolean | No | `false` | Mint an app token so SwiftPM can clone private/internal org dependencies |
 
 **Secrets:**
 
@@ -235,6 +237,8 @@ Complete release pipeline for macOS `.pkg` distribution with a compiled Swift bi
 | `SECRET_ENV_VARS` | No | Compile-time env vars written to `.env` |
 | `JAMF_CLIENT_ID` | No | Jamf Pro API client ID |
 | `JAMF_CLIENT_SECRET` | No | Jamf Pro API client secret |
+| `APP_ID` | No | GitHub App ID (required when `private-deps` is `true`) |
+| `APP_PRIVATE_KEY` | No | GitHub App private key (required when `private-deps` is `true`) |
 
 ### pkg-release.yml
 
@@ -284,12 +288,16 @@ Builds a macOS `.pkg` (with Swift binary) on every PR commit, posts/updates a si
 | `package-name` | string | Yes | — | Name of the Swift binary / package |
 | `identifier` | string | Yes | — | Package identifier (e.g., `com.example.mytool`) |
 | `scripts-path` | string | No | `""` | Path to scripts directory with preinstall/postinstall scripts |
+| `entitlements` | string | No | `""` | Path to an entitlements plist for ad-hoc codesigning the built binary |
+| `private-deps` | boolean | No | `false` | Mint an app token so SwiftPM can clone private/internal org dependencies |
 
 **Secrets:**
 
 | Secret | Required | Description |
 |---|---|---|
 | `SECRET_ENV_VARS` | No | Compile-time env vars written to `.env` |
+| `APP_ID` | No | GitHub App ID (required when `private-deps` is `true`) |
+| `APP_PRIVATE_KEY` | No | GitHub App private key (required when `private-deps` is `true`) |
 
 ### dylib-release.yml
 
@@ -408,6 +416,8 @@ For `typescript-monorepo-release`:
 - `pkg-release` is for `.pkg` packages that contain **no compiled binary** — only payload files and/or scripts.
 - `swift-pkg-pr` and `pkg-release-pr` are the PR preview counterparts (build on every commit, comment on PR).
 - Packages are **always unsigned** (`DEVELOPER_ID_INSTALLER_NAME` is deprecated and ignored).
+- Optional ad-hoc codesigning: set `entitlements` to a plist path and the built binary is codesigned with those entitlements. Needed for daemons that require private entitlements.
+- Private SPM dependencies: set `private-deps: true` and provide `APP_ID` + `APP_PRIVATE_KEY` secrets. An app token is minted and git is configured to authenticate against private/internal GitHub repos during `swift build`.
 - Compile-time env vars are passed via `SECRET_ENV_VARS` secret (written to `.env`).
 - Jamf upload is optional — set `jamf-url` input and provide `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` secrets.
 
@@ -462,7 +472,7 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 | `rust-build` | `.github/blocks/rust-build/action.yaml` | Build Rust binary for a target triple |
 | `go-build` | `.github/blocks/go-build/action.yaml` | Build Go binary for a target OS/arch |
 | `typescript-build` | `.github/blocks/typescript-build/action.yaml` | Build TypeScript project using Bun |
-| `swift-build` | `.github/blocks/swift-build/action.yml` | Build Swift binary (SPM, supports `.env` injection) |
+| `swift-build` | `.github/blocks/swift-build/action.yml` | Build Swift binary (SPM, supports `.env` injection, optional codesigning, private SPM deps) |
 | `swift-pkg` | `.github/blocks/swift-pkg/action.yml` | Create macOS `.pkg` from binary and/or payload/scripts |
 | `build-dylib` | `.github/blocks/build-dylib/action.yml` | Build macOS dylib from Xcode workspace (arm64e) |
 | `build-makefile-dylib` | `.github/blocks/build-makefile-dylib/action.yml` | Build macOS dylib from Makefile |
