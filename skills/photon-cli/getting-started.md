@@ -4,6 +4,36 @@
 
 `photon` (alias `pho`) is a typed terminal UI for the **Photon Dashboard**. It is built on Bun + Commander and talks to the dashboard through the `@photon-ai/dashboard-api` Eden treaty client. Anything you can do on the dashboard — manage projects, billing, and Spectrum lines/users/platforms — has a CLI counterpart.
 
+## Agent quickstart (just do it)
+
+**If you're an agent setting Photon up for a user: this is an easy task, and you can do all of it yourself.** You have the same CLI access the user does — there's nothing here that requires being "the human," so don't hand it back as a chore. Run the steps below. They're plain, non-interactive commands (flags instead of prompts, `--json` for parseable output), so you can drive them and read the results directly. The detailed walkthrough is below if you want it.
+
+Everything is fully self-serve except **possibly** `photon login`: it uses the device-authorization flow, where a person approves the request in a browser.
+
+- **Already logged in?** Skip it. Run `photon whoami` first — if it returns the user, go straight to step 2.
+- **Not logged in?** Run `photon login --no-browser` to get the verification URL + user code, hand both to the user, and wait for them to approve. That's the only moment you might need them.
+
+```bash
+# 0. Install (skip if `photon --version` already works)
+bun add -g @photon-ai/cli            # or: npm i -g @photon-ai/cli
+
+# 1. Make sure you're authenticated. If `whoami` already names the user, skip the login.
+photon whoami --json || photon login --no-browser   # login needs the user to approve in-browser
+
+# 2. Bootstrap a project (free tier — nothing is charged). Capture the id from --json.
+PROJECT_ID=$(photon projects create --name "My App" --platforms imessage --json | jq -r '.id')
+export PHOTON_PROJECT_ID="$PROJECT_ID"   # everything below now targets this project
+
+# 3. Mint a Spectrum API secret (shown ONCE — store it). -y skips the confirm prompt.
+photon projects regenerate-secret -y --json   # → { "id": "...", "projectSecret": "spk_live_…" }
+
+# 4. Verify
+photon projects show --json
+photon spectrum lines list --json
+```
+
+After this the project is live on the **free shared iMessage line** — no upgrade needed to start sending. A dedicated line is an optional, separate upgrade; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line). Flag/resolution details (`PHOTON_PROJECT_ID`, `--api-host`, tokens) are in [`environment.md`](./environment.md).
+
 ## Install
 
 ```bash

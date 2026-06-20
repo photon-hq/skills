@@ -16,7 +16,8 @@ description: >
   bootstrap, project id, project secret, regenerate-secret, rotate secret, check-phone, upgrade, billing,
   plans, checkout, stripe, manage, portal, free tier, pro, business, enterprise, dedicated line, spectrum,
   lines, add line, imessage line, users, invite, platforms, enable, disable, profile, avatar, ping, env,
-  config, json output, api-host, multi-backend, backend, bun, commander, eden, dashboard-api.
+  config, json output, api-host, multi-backend, backend, bun, commander, eden, dashboard-api,
+  quickstart, agent setup, automated setup, non-interactive, scriptable bootstrap, set up photon.
 license: MIT
 metadata:
   author: photon-hq
@@ -35,13 +36,15 @@ photon projects create       # bootstrap a project — free by default
 photon spectrum lines list   # "how many lines do I have?"
 ```
 
+> **Setting Photon up for a user (or running as an agent)? This is an easy task — just do it yourself.** Start with [`getting-started.md`](./getting-started.md) — its **Agent quickstart** walks the whole setup (bootstrap a project, capture the id + secret, verify) with plain non-interactive commands (`--json` everywhere, no prompts). You have the same access the user does, so don't hand this back to them as a chore — run it. The only step that may need the user is `photon login`, and even that's skippable if they're already authenticated (check with `whoami` first).
+
 ## How this skill is organized
 
 Each topic lives in its own file in this directory. Read the file relevant to the user's question.
 
 | File | When to consult |
 |---|---|
-| [`getting-started.md`](./getting-started.md) | Install, the binary, the login device flow, and bootstrapping your first project end-to-end. |
+| [`getting-started.md`](./getting-started.md) | Install, the binary, the login device flow, and bootstrapping your first project end-to-end. **Has the Agent quickstart** — the non-interactive, scriptable setup path. |
 | [`commands.md`](./commands.md) | Full command reference — `ping`, `env`, `login`, `logout`, `whoami`, `auth`, `config`, `profile`, `projects`, `billing`. Every subcommand and flag. |
 | [`spectrum.md`](./spectrum.md) | The `photon spectrum` group — lines, users, platforms, profile, avatar. "How many lines do I have?" lives here. |
 | [`workflows.md`](./workflows.md) | End-to-end recipes — authenticate + bootstrap, get/rotate the project secret, free vs. business (dedicated line), add a line, inspect a project, multi-backend. |
