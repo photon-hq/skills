@@ -20,6 +20,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connect the [Vercel AI SDK](https://sdk.vercel.ai) to iMessage. Local and remote modes, all adapter methods, and gateway events. |
 | [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | `photon-hq/buildspace` | Configure and troubleshoot BuildSpace reusable GitHub Actions workflows for automated releases across Rust, TypeScript, Go, and Swift. |
 | [`spectrum`](./skills/spectrum/SKILL.md) | `spectrum-ts` | Photon's unified messaging SDK for TypeScript. Write your handler once and ship across iMessage, WhatsApp Business, terminal, or a custom platform — plus production architecture patterns. |
+| [`photon-cli`](./skills/photon-cli/SKILL.md) | `@photon-ai/cli` | The `photon` CLI (alias `pho`) — a typed terminal UI for the Photon Dashboard. Authenticate, bootstrap and manage projects, handle billing/upgrades, and manage Spectrum lines, users, and platforms. |
 
 ---
 
@@ -66,6 +67,16 @@ npx skills add photon-hq/skills --skill spectrum
 
 **Covers:** installation and the `Spectrum()` app instance · core primitives (Message, Space, User, Platform provider) · receiving messages and narrowing content (text, attachment, voice, contact, richlink, reaction, poll, group, custom) · the full content builder family · spaces, typing indicators, `responding` · reactions, tapbacks, and threaded replies · platform narrowing · built-in providers (iMessage cloud/local/dedicated with message effects, Terminal TUI, WhatsApp Business 1:1) · custom event streams and graceful shutdown · authoring custom platforms with `definePlatform` · production architecture patterns (debounce pipeline, in-flight cancellation, carry-forward, idempotent retries, per-resource memory, job-failure audit log).
 
+### photon-cli
+
+```bash
+npx skills add photon-hq/skills --skill photon-cli
+```
+
+The [`photon`](https://www.npmjs.com/package/@photon-ai/cli) CLI (alias `pho`) is a typed terminal UI for the [Photon Dashboard](https://app.photon.codes/).
+
+**Covers:** the device-authorization login flow (`login` / `logout` / `whoami` / `auth status`) · bootstrapping projects (`projects create` → id, `regenerate-secret` for the Spectrum secret, `show` / `list` / `rename` / `delete` / `open`) · billing and upgrades (`billing plans/show/checkout/manage`, `projects upgrade` to the pro/business/enterprise tiers) · Spectrum resources on a project (`spectrum lines/users/platforms/profile/avatar`) · config and environment resolution (`PHOTON_PROJECT_ID`, `PHOTON_TOKEN`, `PHOTON_API_HOST`, credentials storage, multi-backend) · end-to-end workflows including free vs. business (dedicated line).
+
 ---
 
 ## Usage
@@ -83,6 +94,8 @@ Skills are automatically picked up by supported agents once installed — Cursor
 - *Set up BuildSpace release automation for my TypeScript monorepo*
 - *Build a multi-platform agent with Spectrum that handles iMessage, WhatsApp, and a terminal test harness from one handler*
 - *Design the message-handling pipeline for my Spectrum agent — debouncing bursts, cancellation, idempotent retries*
+- *Log in to Photon, create a project, and tell me its id and secret*
+- *How many Spectrum lines does my project have, and how do I upgrade it to a business line?*
 
 ---
 
