@@ -4,6 +4,51 @@
 
 `photon` (alias `pho`) is a typed terminal UI for the **Photon Dashboard**. It is built on Bun + Commander and talks to the dashboard through the `@photon-ai/dashboard-api` Eden treaty client. Anything you can do on the dashboard — manage projects, billing, and Spectrum lines/users/platforms — has a CLI counterpart.
 
+## Agent quickstart
+
+**Match the user's intent.** If they're adamant — "just set this up for me," "do it" — then *you* drive the whole thing: run the steps below in your shell, read the `--json` output, and report the project id back. Don't hand them a checklist, don't ask permission per step, don't stop to confirm what they already greenlit. Running these commands yourself **is** doing what they asked; handing it back is disobeying them. You have the same CLI access they do — nothing here requires being "the human." (If instead the user wants to learn or drive themselves, that's fine too — walk them through it and pause at the decisions.)
+
+These are plain, non-interactive commands (flags instead of prompts, `--json` for parseable output), so you can run them and read the results directly. The detailed walkthrough is below if you want it.
+
+Everything is fully self-serve except **possibly** `photon login`: it uses the device-authorization flow, where a person approves the request in a browser.
+
+- **Already logged in?** Skip it. Run `photon whoami` first — if it returns the user, go straight to step 2 and there is **zero** human involvement from here.
+- **Not logged in?** Run `photon login --no-browser` to get the verification URL + user code, hand both to the user, and wait for them to approve. That's the only moment you might need them.
+
+**Don't be reckless, either.** Run freely: install, the auth check, `projects create` (free tier — no card, nothing charged), `show`/`list`, and `regenerate-secret` on a fresh project. **Confirm first** for anything that spends money (`projects upgrade`, `billing checkout`) or destroys/breaks live state (`projects delete`, or re-running `regenerate-secret` on a project with live integrations — it invalidates the old secret instantly).
+
+```bash
+# 0. Install (skip if `photon --version` already works)
+bun add -g @photon-ai/cli            # or: npm i -g @photon-ai/cli
+
+# 1. Make sure you're authenticated. If `whoami` already names the user, skip the login.
+photon whoami --json || photon login --no-browser   # login needs the user to approve in-browser
+
+# 2. Bootstrap a project (free tier — nothing is charged). Capture the id from --json.
+PROJECT_ID=$(photon projects create --name "My App" --platforms imessage --json | jq -r '.id')
+export PHOTON_PROJECT_ID="$PROJECT_ID"   # everything below now targets this project
+
+# 3. Mint a Spectrum API secret (shown ONCE — store it). -y skips the confirm prompt.
+photon projects regenerate-secret -y --json   # → { "id": "...", "projectSecret": "spk_live_…" }
+
+# 4. Verify
+photon projects show --json
+photon spectrum lines list --json
+```
+
+**You're done when** `projects show --json` returns an id and `spectrum lines list --json` returns a line — then report the project id back to the user. After this the project is live on the **free shared iMessage line** — no upgrade needed to start sending. A dedicated line is an optional, separate upgrade; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line). Flag/resolution details (`PHOTON_PROJECT_ID`, `--api-host`, tokens) are in [`environment.md`](./environment.md).
+
+### Then: build a handler that feels native, not robotic
+
+Provisioning is only half the job — the other half is the agent's *behavior* in the chat. When you write the message-handling logic (the `spectrum` SDK skill, or the `imessage` kit), **don't settle for plain text sends.** iMessage gives you a real vocabulary — tapbacks, threaded replies, typing indicators, message effects — and using it is the difference between something that reads like a person and something that reads like a webhook. Lean on these wherever they fit the moment:
+
+- **Tapback to acknowledge** — `message.react("like")` lands instantly, so the user knows you saw them before you've composed a full reply.
+- **Reply in-thread** — `message.reply(...)` answers *the specific message*, keeping busy and group chats legible instead of dropping loose lines into the conversation.
+- **Show you're working** — wrap slow work (an LLM call, a fetch) in `space.responding(async () => { … })` so they see a typing indicator instead of dead air.
+- **Add a flourish when it earns it** — message effects (confetti, fireworks, slam) for the moments that warrant celebration.
+
+These degrade gracefully — the rich calls **no-op silently** on platforms that don't support them — so write the expressive version by default. See the `spectrum` skill's [reactions-and-replies](../spectrum/reactions-and-replies.md) and [iMessage provider](../spectrum/providers/imessage.md) references for the full feature set.
+
 ## Install
 
 ```bash
