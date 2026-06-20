@@ -53,7 +53,7 @@ On success it prints the new **project id** and a hint to make it active:
   To make this the active project: export PHOTON_PROJECT_ID='proj_abc123'
 ```
 
-A new project is **free** — there's no payment step at creation. (Upgrading to a paid/business tier is a separate action; see [`workflows.md`](./workflows.md).)
+A new project is **free** — there's no payment step at creation, and iMessage works right away on a **shared line** (find the number you send from in the dashboard). Upgrading to the **business** tier for your own **dedicated line** is a separate, optional action; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).
 
 ### Make it the active project
 

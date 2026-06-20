@@ -115,4 +115,4 @@ photon billing checkout business
 photon billing manage
 ```
 
-> `projects upgrade` and `billing checkout` overlap. `projects upgrade` is the smart, one-shot path (it figures out checkout vs. portal for you); `billing checkout` / `billing manage` are the explicit forms. See [`workflows.md`](./workflows.md#free-vs-business-dedicated-line).
+> `projects upgrade` and `billing checkout` overlap. `projects upgrade` is the smart, one-shot path (it figures out checkout vs. portal for you); `billing checkout` / `billing manage` are the explicit forms. See [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).

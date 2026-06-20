@@ -23,7 +23,7 @@ photon spectrum lines rm <line-id>
 
 > **"How many lines do I have?"** → `photon spectrum lines list` (set `$PHOTON_PROJECT_ID` first, or pass `--project`). Use `--json` to count or script it.
 
-> `lines add` only attaches an **iMessage** line and takes no phone number — provisioning/choosing the actual number happens in the dashboard. See the free-vs-business workflow in [`workflows.md`](./workflows.md#free-vs-business-dedicated-line).
+> `lines add` only attaches an **iMessage** line and takes no phone number — provisioning/choosing the actual number happens in the dashboard. On the **free tier** you send on a **shared line**, so no line is provisioned to your project and `list` may show none assigned — find your number in the dashboard. A **dedicated line** comes with the **business** tier. See the free-vs-business workflow in [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).
 
 ## Users
 

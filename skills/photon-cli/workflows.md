@@ -35,12 +35,12 @@ photon projects regenerate-secret          # or: rotate-secret
 
 > Rotating **immediately invalidates** the previous secret — any integration still using the old one breaks. Only rotate when you intend to replace it everywhere. Add `--json` to capture `{ id, projectSecret }` programmatically.
 
-## Free vs. business (dedicated line)
+## Free vs. business (shared vs. dedicated line)
 
-A project is **free by default** — you get it the moment you run `projects create`. There is no separate "provision a line" flow in the CLI; the distinction is the **billing tier**:
+A project is **free by default** — you get it the moment you run `projects create`. **iMessage works on both tiers** — the free tier is not a trial or a locked state. The difference is *which* line your messages go out on:
 
-- **Regular / free** — stay on the free tier. Get your phone number from the **dashboard**.
-- **Business (dedicated line)** — upgrade to the **business** tier, then confirm the number in the dashboard:
+- **Free** — you send on a **shared line** pooled across free projects. Because the line isn't dedicated to your project, nothing is provisioned *to* you, so `spectrum lines add` / `list` won't show a line assigned to your project. To see the number you're actually sending from, check the **dashboard**. Staying on the free tier is perfectly fine — upgrade only when you want a line of your own.
+- **Business (dedicated line)** — upgrade to the **business** tier to get your **own dedicated line** instead of the shared pool, then confirm the number in the dashboard:
 
 ```bash
 photon projects upgrade business      # smart-routes to Stripe checkout (or the portal if already subscribed)
