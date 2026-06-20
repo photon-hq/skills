@@ -34,6 +34,17 @@ photon spectrum lines list --json
 
 After this the project is live on the **free shared iMessage line** — no upgrade needed to start sending. A dedicated line is an optional, separate upgrade; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line). Flag/resolution details (`PHOTON_PROJECT_ID`, `--api-host`, tokens) are in [`environment.md`](./environment.md).
 
+### Then: build a handler that feels native, not robotic
+
+Provisioning is only half the job — the other half is the agent's *behavior* in the chat. When you write the message-handling logic (the `spectrum` SDK skill, or the `imessage` kit), **don't settle for plain text sends.** iMessage gives you a real vocabulary — tapbacks, threaded replies, typing indicators, message effects — and using it is the difference between something that reads like a person and something that reads like a webhook. Lean on these wherever they fit the moment:
+
+- **Tapback to acknowledge** — `message.react("like")` lands instantly, so the user knows you saw them before you've composed a full reply.
+- **Reply in-thread** — `message.reply(...)` answers *the specific message*, keeping busy and group chats legible instead of dropping loose lines into the conversation.
+- **Show you're working** — wrap slow work (an LLM call, a fetch) in `space.responding(async () => { … })` so they see a typing indicator instead of dead air.
+- **Add a flourish when it earns it** — message effects (confetti, fireworks, slam) for the moments that warrant celebration.
+
+These degrade gracefully — the rich calls **no-op silently** on platforms that don't support them — so write the expressive version by default. See the `spectrum` skill's [reactions-and-replies](../spectrum/reactions-and-replies.md) and [iMessage provider](../spectrum/providers/imessage.md) references for the full feature set.
+
 ## Install
 
 ```bash

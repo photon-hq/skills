@@ -36,11 +36,22 @@ const app = await Spectrum({
 });
 
 for await (const [space, message] of app.messages) {
-  if (message.content.type === "text") {
-    await space.send(`echo: ${message.content.text}`);
-  }
+  if (message.content.type !== "text") continue;
+
+  // Use the platform's native vocabulary, not a bare send:
+  await message.react("like");                 // tapback to acknowledge instantly
+  await space.responding(async () => {         // show a typing indicator while you work
+    await message.reply(`echo: ${message.content.text}`);  // threaded reply, not a loose message
+  });
 }
 ```
+
+> **Building an agent? Be rich, not robotic.** A bare `space.send(...)` works, but on iMessage (and other rich platforms) it reads like a webhook, not a person. Reach for the native features whenever they fit the moment:
+> - **`message.react("love" | "like" | "laugh" | …)`** — acknowledge a message instantly with a tapback before you've composed a full answer.
+> - **`message.reply(...)`** — answer *the specific message* in-thread, so the conversation stays legible in a busy chat.
+> - **`space.responding(async () => { … })`** — wrap slow work (an LLM call, a fetch) so the recipient sees a typing indicator instead of dead air.
+>
+> These **no-op silently** on platforms that don't support them, so there's no downside to reaching for the richer call — write the expressive version once and it degrades gracefully everywhere. See [`reactions-and-replies.md`](./reactions-and-replies.md), [`spaces-and-users.md`](./spaces-and-users.md), and the iMessage-only flourishes (message effects, the full tapback set) in [`providers/imessage.md`](./providers/imessage.md).
 
 Projectless providers like `terminal` work without credentials:
 
