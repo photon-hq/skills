@@ -74,7 +74,8 @@ Update an existing profile; preserves unset fields. Requires at least one field 
 | `create` | `new` | Create a project. Interactive, or `--name` required non-interactively. Returns the project **id**. |
 | `update [id]` | `edit`, `rename` | Rename a project. Requires `--name`. (Only the name is mutable via this route.) |
 | `delete [id]` | `rm`, `remove` | Permanently delete a project. Confirms unless `-y/--yes`. |
-| `regenerate-secret [id]` | `rotate-secret` | Rotate the Spectrum API secret. Shown **once**. Confirms unless `-y/--yes`. |
+| `secret [id]` | `get-secret` | Print the existing Spectrum API secret (read-only — does **not** rotate). Bare value on stdout, or `--json`. |
+| `regenerate-secret [id]` | `rotate-secret` | **Rotate** the Spectrum API secret (replaces it). Shown **once**. Confirms unless `-y/--yes`. |
 | `open [id]` | — | Open the project in the dashboard web UI. `--no-browser` to print the URL. |
 | `upgrade [id] [tier]` | — | Subscribe / pay. Smart-routes to Stripe checkout or the billing portal. Tiers: `pro`, `business`, `enterprise`. |
 | `check-phone <number>` | — | Check whether a phone number is available on Spectrum. |
@@ -88,7 +89,8 @@ Notable flags:
 photon projects ls
 photon projects show                       # uses $PHOTON_PROJECT_ID
 photon projects create --name "My App"
-photon projects regenerate-secret          # new secret, shown once
+photon projects secret                     # read the existing secret (no rotation)
+photon projects regenerate-secret          # rotate — new secret, shown once
 photon projects upgrade business           # business tier (see workflows.md)
 photon projects check-phone +14155551234
 ```
