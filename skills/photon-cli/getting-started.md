@@ -28,8 +28,9 @@ photon whoami --json || photon login --no-browser   # login needs the user to ap
 PROJECT_ID=$(photon projects create --name "My App" --platforms imessage --json | jq -r '.id')
 export PHOTON_PROJECT_ID="$PROJECT_ID"   # everything below now targets this project
 
-# 3. Mint a Spectrum API secret (shown ONCE — store it). -y skips the confirm prompt.
-photon projects regenerate-secret -y --json   # → { "id": "...", "projectSecret": "spk_live_…" }
+# 3. Read the Spectrum API secret (does NOT rotate). Mint one only if there's none yet.
+photon projects secret --json \
+  || photon projects regenerate-secret -y --json   # → { "id": "...", "projectSecret": "spk_live_…" }
 
 # 4. Verify
 photon projects show --json
@@ -112,10 +113,16 @@ photon spectrum lines list
 
 ## Step 3 — Get the project secret
 
-`projects create` returns the **id**, not the secret. To get a Spectrum API secret, rotate it (it's shown **once**) or read it from the dashboard **Settings** page:
+`projects create` returns the **id**, not the secret. Read the current Spectrum API secret **without rotating it**:
 
 ```bash
-photon projects regenerate-secret      # prints the new secret once — store it
+photon projects secret                 # prints the existing secret (read-only)
+```
+
+If the project has no secret yet, mint one (it's shown **once**) — or read it from the dashboard **Settings** page:
+
+```bash
+photon projects regenerate-secret      # mints/rotates the secret, shown once — store it
 ```
 
 ```text
@@ -124,7 +131,7 @@ photon projects regenerate-secret      # prints the new secret once — store it
 ! This is shown once. Store it somewhere safe — re-rotating is the only way to recover.
 ```
 
-> Rotating invalidates the previous secret immediately — any integration using the old one stops working. See [`workflows.md`](./workflows.md#get--rotate-the-project-secret).
+> Use `projects secret` to read an existing secret; reach for `regenerate-secret` only to deliberately **replace** it. Rotating invalidates the previous secret immediately — any integration using the old one stops working. See [`workflows.md`](./workflows.md#get--rotate-the-project-secret).
 
 ## Next
 

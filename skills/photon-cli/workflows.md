@@ -21,10 +21,16 @@ A freshly created project is **free**. Nothing is charged at creation.
 
 ## Get / rotate the project secret
 
-`projects create` returns the **id**, never the secret. Get a Spectrum API secret one of two ways:
+`projects create` returns the **id**, never the secret. Read the existing Spectrum API secret **without rotating it**:
 
-- **Dashboard** — read it from the project's **Settings** page.
-- **CLI** — rotate it (printed **once**):
+```bash
+photon projects secret                     # or: get-secret — prints the existing secret
+photon projects secret --json              # → { "id": "...", "projectSecret": "spk_live_…" }
+```
+
+You can also read it from the project's **Settings** page in the dashboard.
+
+**Rotate** only when you intend to replace the secret everywhere (printed **once**):
 
 ```bash
 photon projects regenerate-secret          # or: rotate-secret
@@ -33,7 +39,7 @@ photon projects regenerate-secret          # or: rotate-secret
 # ! This is shown once. Store it somewhere safe — re-rotating is the only way to recover.
 ```
 
-> Rotating **immediately invalidates** the previous secret — any integration still using the old one breaks. Only rotate when you intend to replace it everywhere. Add `--json` to capture `{ id, projectSecret }` programmatically.
+> Rotating **immediately invalidates** the previous secret — any integration still using the old one breaks. Prefer `projects secret` to read; only `regenerate-secret` when replacing. Add `--json` to capture `{ id, projectSecret }` programmatically.
 
 ## Free vs. business (shared vs. dedicated line)
 

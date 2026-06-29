@@ -61,8 +61,10 @@ photon whoami --json || photon login --no-browser  # login: hand the user the UR
 PROJECT_ID=$(photon projects create --name "My App" --platforms imessage --json | jq -r '.id')
 export PHOTON_PROJECT_ID="$PROJECT_ID"
 
-# 3. Mint the Spectrum API secret (shown ONCE — store it). -y skips the confirm.
-photon projects regenerate-secret -y --json        # → { "projectSecret": "spk_live_…" }
+# 3. Read the Spectrum API secret (does NOT rotate). Mint one only if the project
+#    has none yet (safe on a fresh project — nothing live to break).
+photon projects secret --json \
+  || photon projects regenerate-secret -y --json   # → { "projectSecret": "spk_live_…" }
 
 # 4. Verify, then report the project id back to the user.
 photon projects show --json
@@ -75,7 +77,7 @@ photon spectrum lines list --json
 
 So "don't be stingy" never becomes "spent the user's money" or "broke their integration":
 
-- **Run freely** (safe, reversible, no cost): install, `whoami`/`auth status`, `projects create` on the free tier, `projects show`/`list`, `spectrum … list`, and `regenerate-secret` on a **fresh** project.
+- **Run freely** (safe, reversible, no cost): install, `whoami`/`auth status`, `projects create` on the free tier, `projects show`/`list`/`secret` (read-only), `spectrum … list`, and `regenerate-secret` on a **fresh** project.
 - **Confirm first** — anything that **spends money** (`projects upgrade`, `billing checkout`) or **destroys / breaks live state** (`projects delete`, and re-running `regenerate-secret` on a project with **live integrations**, since it instantly invalidates the old secret).
 
 Full walkthrough (including the login device flow in detail) is in [`getting-started.md`](./getting-started.md).
