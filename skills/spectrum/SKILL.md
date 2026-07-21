@@ -6,7 +6,7 @@ description: >
   multi-platform by design and is becoming multi-language; the current SDK is `spectrum-ts` (TypeScript), with
   additional language SDKs planned. Use this skill for any Spectrum question — quickstart, multi-platform setup,
   receiving messages, content builders, spaces and users, reactions and replies, platform narrowing, the
-  built-in providers (iMessage cloud/local/dedicated with message effects, Terminal TUI test harness, WhatsApp
+  built-in providers (separate iMessage cloud and local providers, shared/dedicated cloud line models and message effects, Terminal TUI test harness, WhatsApp
   Business 1:1), custom event streams, graceful shutdown, building your own provider with `definePlatform`, and
   the production architecture patterns Photon uses internally to ship agents that live natively inside IM apps
   (five-stage inbound pipeline with debounce → batch flush → mark as read → generate → send, in-flight
@@ -17,8 +17,8 @@ description: >
   Keywords: spectrum, spectrum-ts, photon, unified messaging, multi-platform, multi-language, im agent,
   messaging agent, imessage, whatsapp, whatsapp business, terminal, tuichat, definePlatform, custom platform,
   platform provider, platform narrowing, app.messages, Spectrum(), space, send, reply, react, tapback, typing
-  indicator, responding, startTyping, stopTyping, content builder, text, attachment, voice, contact, richlink,
-  poll, group, custom content, message effects, bubble effect, screen effect, line model, dedicated line,
+  indicator, responding, startTyping, stopTyping, content builder, text, markdown, attachment, voice, contact,
+  richlink, app card, poll, group, custom content, message effects, bubble effect, screen effect, line model, dedicated line,
   shared pool, custom events, app.stop, lifecycle, SIGINT, graceful shutdown, message queue, debounce, batch,
   in-flight, cancellation, abort controller, carry forward, idempotent retry, client guid, dedup, deduplication,
   startIndex, resume cursor, working memory, resourceId, threadId, per-resource memory, job failure, audit log,
@@ -44,11 +44,11 @@ Each topic lives in its own file in this directory. Read the file relevant to th
 |---|---|
 | [`getting-started.md`](./getting-started.md) | Installation, the `Spectrum()` app instance, multi-platform setup, the four core primitives. |
 | [`messages.md`](./messages.md) | Receiving messages, the `Message` shape, narrowing on `content.type`, filtering own messages. |
-| [`content.md`](./content.md) | Content builders for outgoing messages: `text`, `attachment`, `voice`, `contact`, `richlink`, `poll`, `group`, `custom`. |
+| [`content.md`](./content.md) | Content builders for outgoing messages: `text`, `markdown`, `attachment`, `voice`, `contact`, `richlink`, `app`, `poll`, `group`, `custom`. |
 | [`spaces-and-users.md`](./spaces-and-users.md) | The `Space` interface, typing indicators, `responding`, creating DMs and groups. |
 | [`reactions-and-replies.md`](./reactions-and-replies.md) | `message.react(...)`, threaded `message.reply(...)`, when to use which. |
 | [`platform-narrowing.md`](./platform-narrowing.md) | Recovering platform-specific types from generic Spectrum primitives. |
-| [`providers/imessage.md`](./providers/imessage.md) | iMessage provider — cloud, local, dedicated modes, line model, per-phone routing, message effects, tapbacks. |
+| [`providers/imessage.md`](./providers/imessage.md) | iMessage — separate cloud/local providers, shared/dedicated cloud line model, per-phone routing, message effects, tapbacks. |
 | [`providers/terminal.md`](./providers/terminal.md) | Terminal TUI provider — chat sidebar, reactions, replies, attachments, slash commands. |
 | [`providers/whatsapp-business.md`](./providers/whatsapp-business.md) | WhatsApp Business Cloud API. **1:1 only**. |
 | [`custom-events-and-lifecycle.md`](./custom-events-and-lifecycle.md) | Per-provider event streams (`app.typing`, etc.), `app.stop()`, signal handling. |
@@ -57,5 +57,5 @@ Each topic lives in its own file in this directory. Read the file relevant to th
 
 ## See also
 
-- [Spectrum docs](https://docs.photon.codes/spectrum-ts/getting-started)
+- [Spectrum docs](https://photon.codes/docs/spectrum-ts/getting-started)
 - [`spectrum-ts` on GitHub](https://github.com/photon-hq/spectrum-ts)

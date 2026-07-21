@@ -2,7 +2,7 @@
 
 > TypeScript samples below — the `Message` shape and content variants are language-neutral.
 
-Every incoming message arrives through `app.messages` as a `[Space, Message]` pair. The space is already bound to the originating conversation — you don't need to resolve it yourself to reply.
+Every message arrives through `app.messages` as a `[Space, Message]` pair. The space is already bound to the originating conversation, so you do not resolve it again to respond.
 
 ## The Message shape
 
@@ -10,16 +10,19 @@ Every incoming message arrives through `app.messages` as a `[Space, Message]` pa
 |---|---|
 | `id` | Platform-assigned message identifier. |
 | `content` | Discriminated union on `type` — see [Narrowing content](#narrowing-content). |
-| `sender` | The `User` who sent the message (`{ id, __platform }`). |
-| `space` | The `Space` the message was sent into. |
-| `platform` | Name of the provider that delivered the message (e.g. `"iMessage"`, `"terminal"`). |
-| `timestamp` | `Date` of when the message was sent. |
-| `react(reaction)` | React to this message. No-op on platforms without reactions. |
-| `reply(...content)` | Reply threaded to this message. No-op on platforms without thread support. |
+| `sender` | The acting `User`, or `undefined` when the platform recorded no actor. |
+| `space` | The `Space` containing the message. |
+| `platform` | Stable lowercase provider ID, such as `"imessage"`, `"local_imessage"`, or `"terminal"`. |
+| `direction` | `"inbound"` or `"outbound"`. Use this to filter echoed sends. |
+| `timestamp` | `Date` when the message was created. |
+| `react(emoji)` | React to this message. No-op on platforms without reactions. |
+| `reply(...content)` | Reply to this message in-thread. No-op without thread support. |
+| `read()` | Mark this inbound message and earlier messages in the conversation as read; provider support and granularity vary. |
+| `edit(content)` / `unsend()` | Edit or retract this message where supported. |
 
 ## Narrowing content
 
-`Content` is a discriminated union. Always narrow on `message.content.type` before accessing fields.
+`Content` is a discriminated union. Narrow on `message.content.type` before accessing variant fields:
 
 ```ts
 for await (const [space, message] of app.messages) {
@@ -28,28 +31,18 @@ for await (const [space, message] of app.messages) {
       console.log(message.content.text);
       break;
     case "attachment":
-      console.log(`${message.content.name} (${message.content.mimeType})`, await message.content.read());
-      break;
-    case "voice":
-      console.log(`voice note (${message.content.duration}s)`);
-      break;
-    case "contact":
-      console.log(message.content.name?.formatted, message.content.phones);
-      break;
-    case "richlink":
-      console.log(message.content.url, await message.content.title());
+      console.log(message.content.name, await message.content.read());
       break;
     case "reaction":
       console.log(`${message.content.emoji} on ${message.content.target.id}`);
       break;
-    case "poll":
-      console.log(message.content.title, message.content.options);
+    case "addMember":
+      console.log(`${message.sender?.id ?? "someone"} added ${message.content.members.join(", ")}`);
       break;
-    case "poll_option":
-      console.log(`vote ${message.content.selected ? "+" : "-"}`, message.content.title);
-      break;
-    case "group":
-      console.log(`group of ${message.content.items.length} items`);
+    case "avatar":
+      if (message.content.action.kind === "set") {
+        console.log(await message.content.action.read());
+      }
       break;
     case "custom":
       console.log(message.content.raw);
@@ -58,27 +51,53 @@ for await (const [space, message] of app.messages) {
 }
 ```
 
-| Type | Fields |
+Common content variants:
+
+| Type | Important fields |
 |---|---|
 | `"text"` | `text` |
-| `"attachment"` | `name`, `mimeType`, `size?`, `read()`, `stream()` |
+| `"markdown"` | `markdown` — outbound styled text |
+| `"attachment"` | `id`, `name`, `mimeType`, `size?`, `read()`, `stream()` |
 | `"voice"` | `name?`, `mimeType`, `duration?`, `size?`, `read()`, `stream()` |
-| `"contact"` | `name?`, `phones?`, `emails?`, `addresses?`, `org?`, `urls?`, `birthday?`, `note?`, `photo?`, `user?` |
-| `"richlink"` | `url`, `title()`, `summary()`, `cover()` |
+| `"contact"` | `name?`, `phones?`, `emails?`, `addresses?`, `org?`, `urls?`, `birthday?`, `note?`, `photo?`, `user?`, `raw?` |
+| `"richlink"` | `url` |
+| `"app"` | `url()`, `layout()`, `live?` |
+| `"effect"` | `content`, `effect` — iMessage effect around text, markdown, or an attachment |
 | `"reaction"` | `emoji`, `target: Message` |
-| `"poll"` | `title`, `options: { title }[]` |
-| `"poll_option"` | `option`, `poll`, `selected`, `title` — sent as a vote |
+| `"reply"` / `"edit"` | `content`, `target: Message` |
+| `"unsend"` / `"read"` | `target: Message` |
+| `"typing"` | `state: "start" \| "stop"` |
+| `"streamText"` | `stream()`, `format?` |
+| `"poll"` | `title`, `options` |
+| `"poll_option"` | `option`, `poll`, `selected`, `title` |
 | `"group"` | `items: Message[]` |
+| `"rename"` | `displayName` |
+| `"avatar"` | `action: { kind: "set", read(), mimeType } \| { kind: "clear" }` |
+| `"addMember"` / `"removeMember"` | `members`; `sender` is the actor when known |
+| `"leaveSpace"` | No extra fields; `sender` is the member who left when known |
 | `"custom"` | `raw: unknown` |
 
-Outgoing-only variants like `"effect"` (an iMessage screen effect wrapping inner content) appear on echoed sends — see [`providers/imessage.md`](./providers/imessage.md).
+Outgoing-only variants may be echoed by a provider. Group-management events carry the acting user in `message.sender` when the platform records one.
 
 ## Filtering out your own messages
 
-Some platforms echo your own sends. Compare the sender to a known identity:
+Every message has a universal `direction`; do not depend on an iMessage-only raw field:
 
 ```ts
-if (message.sender.id === myAccountId) continue;
+for await (const [space, message] of app.messages) {
+  if (message.direction === "outbound") continue;
+  // Handle user input.
+}
 ```
 
-iMessage exposes an `isFromMe` flag on the raw message extra (via [platform narrowing](./platform-narrowing.md)).
+When branching by provider, use the stable lowercase ID before [platform narrowing](./platform-narrowing.md):
+
+```ts
+import { imessage } from "spectrum-ts/providers/imessage";
+
+for await (const [, message] of app.messages) {
+  if (message.platform !== "imessage") continue;
+  const imessageMessage = imessage(message);
+  // Use iMessage-specific fields here.
+}
+```

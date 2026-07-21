@@ -43,6 +43,6 @@ Default is `chat-1`; new chats opened with `Ctrl+N` get `chat-2`, `chat-3`, ... 
 
 ```ts
 const t = terminal(app);
-const debug = await t.space({ id: "debug" });
+const debug = await t.space.get("debug");
 await debug.send("agent online");
 ```

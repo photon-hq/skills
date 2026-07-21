@@ -2,7 +2,7 @@
 
 > TypeScript samples below — builder names and content shapes are language-neutral.
 
-Every `send`/`reply` accepts a plain string or a content builder: `text`, `attachment`, `voice`, `contact`, `richlink`, `poll`, `option`, `group`, `custom`.
+Every `send` / `reply` accepts a plain string or a content builder. Common message-body builders are `text`, `markdown`, `attachment`, `voice`, `contact`, `richlink`, `app`, `poll`, `option`, `group`, and `custom`; provider-specific and action builders are covered in their topic files.
 
 ## Text
 
@@ -13,14 +13,27 @@ await space.send(text("Hello, world."));
 await space.send("Hello, world."); // strings are equivalent
 ```
 
+## Markdown and streaming text
+
+Use `markdown()` for styled outbound text. Both `text()` and `markdown()` also accept an AI SDK result, `AsyncIterable`, or `ReadableStream`; providers with streaming support update progressively, while others wait and send the accumulated text.
+
+```ts
+import { markdown } from "spectrum-ts";
+
+await space.send(markdown("**Bold** and _italic_ text."));
+```
+
+Inbound formatted messages still arrive as `text` content.
+
 ## Attachments
 
-Pass a file path or a `Buffer`. MIME types are inferred from the file extension; override with `options.mimeType` when you have raw bytes. If MIME can't be inferred and `options.mimeType` is omitted, the builder throws at build time.
+Pass a filesystem path, `URL`, or `Buffer`. MIME types are inferred from path and URL extensions; provide `options.mimeType` for raw bytes or when the extension is missing. If MIME cannot be inferred and no override is present, the builder throws at build time.
 
 ```ts
 import { attachment } from "spectrum-ts";
 
 await space.send(attachment("/path/to/photo.jpg"));
+await space.send(attachment(new URL("https://example.com/photo.jpg")));
 await space.send(attachment(buffer, { name: "report.pdf", mimeType: "application/pdf" }));
 ```
 
@@ -40,7 +53,8 @@ await space.send(voice(buffer, { name: "note.m4a", mimeType: "audio/mp4", durati
 Accepts a structured `ContactInput`, a vCard string, a `vcf` instance, or a `User` plus optional details.
 
 ```ts
-import { contact, fromVCard } from "spectrum-ts";
+import { readFile } from "node:fs/promises";
+import { contact } from "spectrum-ts";
 
 await space.send(contact({
   name: { first: "Ada", last: "Lovelace" },
@@ -57,12 +71,22 @@ await space.send(contact(vcf));
 
 ## Rich links
 
-Spectrum scrapes Open Graph metadata at send time. `title()`, `summary()`, `cover()` are lazy — fetched only if the receiving platform needs them. Platforms without rich-link support fall back to plain text.
+`richlink()` carries only the URL; Spectrum does not fetch Open Graph metadata. Each provider asks its native client to render or unfurl the URL, and platforms without rich-link support fall back to plain text.
 
 ```ts
 import { richlink } from "spectrum-ts";
 
 await space.send(richlink("https://example.com/article"));
+```
+
+## App cards
+
+Use `app()` for a tappable app-style URL card. `live` requests a provider's live app UI when available; providers without an app-card surface fall back to their normal URL behavior.
+
+```ts
+import { app } from "spectrum-ts";
+
+await space.send(app("https://example.com/dashboard", { live: true }));
 ```
 
 ## Polls
@@ -91,7 +115,7 @@ await space.send(group(
 
 ## Custom
 
-Send platform-specific structured payloads. The provider's `actions.send` interprets `raw`.
+Send platform-specific structured payloads. The provider's top-level `send` dispatcher interprets `raw`.
 
 ```ts
 import { custom } from "spectrum-ts";
