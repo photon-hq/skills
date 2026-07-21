@@ -15,14 +15,14 @@ Every message arrives through `app.messages` as a `[Space, Message]` pair. The s
 | `platform` | Stable lowercase provider ID, such as `"imessage"`, `"local_imessage"`, or `"terminal"`. |
 | `direction` | `"inbound"` or `"outbound"`. Use this to filter echoed sends. |
 | `timestamp` | `Date` when the message was created. |
-| `react(emoji)` | React to this message. No-op on platforms without reactions. |
-| `reply(...content)` | Reply to this message in-thread. No-op without thread support. |
+| `react(emoji)` | React to this message. Unsupported providers normally warn and skip; see [capability semantics](./capability-semantics.md). |
+| `reply(...content)` | Reply to this message in-thread. Unsupported providers normally warn and skip; see [capability semantics](./capability-semantics.md). |
 | `read()` | Mark this inbound message and earlier messages in the conversation as read; provider support and granularity vary. |
 | `edit(content)` / `unsend()` | Edit or retract this message where supported. |
 
 ## Narrowing content
 
-`Content` is a discriminated union. Narrow on `message.content.type` before accessing variant fields:
+`Content` is a discriminated union. Narrow on `message.content.type` before accessing variant fields. Membership events expose `members` as normalized platform ID strings (`string[]`); outbound membership builders also accept `User` objects but convert them to IDs before building content.
 
 ```ts
 for await (const [space, message] of app.messages) {

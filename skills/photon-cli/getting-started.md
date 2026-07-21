@@ -48,7 +48,7 @@ Provisioning is only half the job — the other half is the agent's *behavior* i
 - **Show you're working** — wrap slow work (an LLM call, a fetch) in `space.responding(async () => { … })` so they see a typing indicator instead of dead air.
 - **Add a flourish when it earns it** — message effects (confetti, fireworks, slam) for the moments that warrant celebration.
 
-Unsupported rich calls are skipped without throwing, and Spectrum logs a structured warning when a provider reports them as unsupported; some typing controls are accepted as provider no-ops. Check support and logs when the interaction depends on the feature. See the `spectrum` skill's [reactions-and-replies](../spectrum/reactions-and-replies.md) and [iMessage provider](../spectrum/providers/imessage.md) references for the current feature set.
+Spectrum applies its [capability and fallback semantics](../spectrum/capability-semantics.md) to these calls. Check the [reactions-and-replies](../spectrum/reactions-and-replies.md) and [iMessage provider](../spectrum/providers/imessage.md) references before depending on a feature.
 
 ## Install
 

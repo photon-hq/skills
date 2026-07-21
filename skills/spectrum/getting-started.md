@@ -36,6 +36,7 @@ const app = await Spectrum({
 });
 
 for await (const [space, message] of app.messages) {
+  if (message.direction === "outbound") continue;
   if (message.content.type !== "text") continue;
 
   // Use the platform's native vocabulary, not a bare send:
@@ -52,7 +53,7 @@ for await (const [space, message] of app.messages) {
 > - **`message.reply(...)`** — answer *the specific message* in-thread, so the conversation stays legible in a busy chat.
 > - **`space.responding(async () => { … })`** — wrap slow work (an LLM call, a fetch) so the recipient sees a typing indicator instead of dead air.
 >
-> Unsupported rich operations are skipped without throwing, and Spectrum emits a structured warning when the provider reports them as unsupported; some typing-only controls are accepted by providers as no-ops. Write the expressive version once, but check support and logs when the interaction depends on that feature. See [`reactions-and-replies.md`](./reactions-and-replies.md), [`spaces-and-users.md`](./spaces-and-users.md), and the iMessage-only flourishes (message effects, the full tapback set) in [`providers/imessage.md`](./providers/imessage.md).
+> These calls follow Spectrum's [capability and fallback semantics](./capability-semantics.md). Check the selected provider before depending on the richer interaction. See [`reactions-and-replies.md`](./reactions-and-replies.md), [`spaces-and-users.md`](./spaces-and-users.md), and the iMessage-only flourishes in [`providers/imessage.md`](./providers/imessage.md).
 
 The loop above is the **reactive** path. To **reach out first** — no inbound message needed — create a space directly with `space.create(...)` and send into it; see [Reaching out vs replying](./spaces-and-users.md#reaching-out-vs-replying).
 

@@ -1,8 +1,8 @@
 # Reactions and replies
 
-> TypeScript samples below — warn-and-skip behavior on unsupported platforms is part of the model, not a TS detail.
+> TypeScript samples below — provider support follows Spectrum's [capability and fallback semantics](./capability-semantics.md).
 
-Both `react` and `reply` live directly on an incoming message. When a platform does not support the operation, Spectrum logs a structured warning, skips it, and resolves without throwing — no `try/catch` needed.
+Both `react` and `reply` live directly on an incoming message. Read the selected provider before depending on either operation; the universal methods can resolve without producing a message.
 
 ```ts
 await message.react("❤️");
@@ -12,7 +12,7 @@ await message.reply("Here's the file:", attachment("/path/to/file.pdf"));
 
 On platforms with thread support (iMessage, WhatsApp Business), `reply` sends threaded. **It is not downgraded to a regular send** — if you need guaranteed delivery, use `space.send(...)`.
 
-`react` takes an emoji glyph. iMessage maps six glyphs to native tapbacks — `❤️` `👍` `👎` `😂` `‼️` `❓` — and sends any other emoji as a custom-emoji reaction. There are no `imessage.tapbacks.*` constants; see [`providers/imessage.md`](./providers/imessage.md).
+`react` takes an emoji glyph. For iMessage's native tapback mapping, custom-emoji behavior, and aliases, read [`providers/imessage.md`](./providers/imessage.md#tapbacks).
 
 Spectrum also exports semantic aliases when a named value reads better:
 
