@@ -16,7 +16,7 @@ npx skills add photon-hq/skills --skill <skill-name>
 
 | Skill | Packages | Description |
 | :--- | :--- | :--- |
-| [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage-kit` | Send and receive iMessages programmatically. Build AI agents, automations, and conversational apps — self-hosted or on Photon's production infrastructure. |
+| [`imessage`](./skills/imessage/SKILL.md) | `@photon-ai/imessage-kit` · `@photon-ai/advanced-imessage` · `spectrum-ts` | Send and receive iMessages programmatically with the current local, hosted, or unified SDK. |
 | [`chat-adapter-imessage`](./skills/chat-adapter-imessage/SKILL.md) | `chat-adapter-imessage` | Connect the [Vercel AI SDK](https://sdk.vercel.ai) to iMessage. Local and remote modes, all adapter methods, and gateway events. |
 | [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | `photon-hq/buildspace` | Configure and troubleshoot BuildSpace reusable GitHub Actions workflows for automated releases across Rust, TypeScript, Go, and Swift. |
 | [`spectrum`](./skills/spectrum/SKILL.md) | `spectrum-ts` | Photon's unified messaging SDK for TypeScript. Write your handler once and ship across iMessage, WhatsApp Business, terminal, or a custom platform — plus production architecture patterns. |
@@ -30,12 +30,13 @@ npx skills add photon-hq/skills --skill <skill-name>
 npx skills add photon-hq/skills --skill imessage
 ```
 
-Two kits, your choice of infrastructure:
+Choose the API that matches the infrastructure:
 
 - **[`@photon-ai/imessage-kit`](https://github.com/photon-hq/imessage-kit)** — Self-hosted. Runs on your Mac.
-- **[`@photon-ai/advanced-imessage-kit`](https://github.com/photon-hq/advanced-imessage-kit)** — Production infrastructure by Photon. Scales to any number of phone numbers.
+- **[`@photon-ai/advanced-imessage`](https://www.npmjs.com/package/@photon-ai/advanced-imessage)** — Current low-level hosted SDK with HTTP and gRPC transports.
+- **[`spectrum-ts`](https://photon.codes/docs/spectrum-ts/getting-started)** — Recommended unified API for most new messaging apps.
 
-**Covers:** sending text, images, files, effects, tapbacks, stickers, and polls · editing and unsending messages · real-time events via WebSockets · group chat management · scheduling and reminders · Find My, FaceTime, and contacts · [Photon Webhook](https://github.com/photon-hq/webhook) for HTTP event forwarding · [Photon MCP](https://github.com/photon-hq/mcp) with 67 tools at `mcp.photon.codes` · security best practices · error handling and plugins.
+**Covers:** the v3 local SDK object API · current hosted HTTP/gRPC entrypoints · text, attachments, effects, reactions, edits, unsends, chats, and groups · live gRPC events and HTTP webhooks · [Photon MCP](https://github.com/photon-hq/mcp) · security, retries, error handling, and local plugins. The old `@photon-ai/advanced-imessage-kit` API is documented only as legacy compatibility guidance.
 
 ### chat-adapter-imessage
 
@@ -65,7 +66,7 @@ npx skills add photon-hq/skills --skill spectrum
 
 [`spectrum-ts`](https://github.com/photon-hq/spectrum-ts) is Photon's unified messaging SDK for TypeScript. Write your handler logic once against a single `app.messages` stream and ship it across iMessage, WhatsApp Business, your terminal, or a custom platform you build yourself.
 
-**Covers:** installation and the `Spectrum()` app instance · core primitives (Message, Space, User, Platform provider) · receiving messages and narrowing content (text, attachment, voice, contact, richlink, reaction, poll, group, custom) · the full content builder family · spaces, typing indicators, `responding` · reactions, tapbacks, and threaded replies · platform narrowing · built-in providers (iMessage cloud/local/dedicated with message effects, Terminal TUI, WhatsApp Business 1:1) · custom event streams and graceful shutdown · authoring custom platforms with `definePlatform` · production architecture patterns (debounce pipeline, in-flight cancellation, carry-forward, idempotent retries, per-resource memory, job-failure audit log).
+**Covers:** installation and the `Spectrum()` app instance · core primitives (Message, Space, User, Platform provider) · receiving messages and narrowing content (text, markdown, attachment, voice, contact, richlink, app, reaction, poll, group, custom) · core content builders · spaces, typing indicators, `responding` · reactions, tapbacks, and threaded replies · platform narrowing · built-in providers (separate iMessage cloud/local providers with shared/dedicated cloud line models and message effects, Terminal TUI, WhatsApp Business 1:1) · custom event streams and graceful shutdown · authoring custom platforms with `definePlatform` · production architecture patterns (debounce pipeline, in-flight cancellation, carry-forward, idempotent retries, per-resource memory, job-failure audit log).
 
 ### photon-cli
 
