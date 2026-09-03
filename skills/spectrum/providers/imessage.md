@@ -1,124 +1,133 @@
 # iMessage provider
 
-> TypeScript samples below — provider selection, line model, effects, and tapbacks are platform features that apply across all Spectrum SDKs.
->
-> Tested with `spectrum-ts` 12.2.0 and `@photon-ai/imessage-kit` 3.0.0 (the local provider's engine).
+> TypeScript samples below — provider selection, line allocation, routing, quotas, and iMessage capabilities apply across Spectrum SDKs.
 
-```ts
-import { imessage } from "spectrum-ts/providers/imessage";
-```
-
-Cloud and local iMessage are separate platforms selected by provider import, not config modes. Use `imessage` through `spectrum-ts/providers/imessage` (backed by `@spectrum-ts/imessage`) for Spectrum Cloud and `localIMessage` from `@spectrum-ts/imessage-local` for a Mac you control. iMessage-specific fields come through [platform narrowing](../platform-narrowing.md).
+Cloud and local iMessage are separate platforms selected by provider import, not configuration modes. Cloud messages use `message.platform === "imessage"`; local messages use `message.platform === "local_imessage"`.
 
 ## Cloud provider
 
-```ts
-// Managed cloud; group features require a dedicated line.
-// Tokens auto-renew at 80% of TTL. Requires projectId/projectSecret on Spectrum().
-imessage.config();
+Use `imessage` from the Spectrum package for managed cloud infrastructure:
 
-// Advanced routing — subscribe to an explicit subset of the project's
-// cloud-owned lines. Explicit tokens are not auto-renewed.
-imessage.config({
-  clients: [
-    { address: "instance-1.example.com:443", token: "your-token", phone: "+15551111111" },
-    { address: "instance-2.example.com:443", token: "your-token", phone: "+15552222222" },
+```ts
+import { Spectrum } from "spectrum-ts";
+import { imessage } from "spectrum-ts/providers/imessage";
+
+const app = await Spectrum({
+  providers: [imessage.config()],
+});
+```
+
+With Spectrum project credentials, the provider discovers the project's cloud lines and renews their tokens at roughly 80% of TTL. Most applications should use automatic discovery.
+
+Explicit clients are available when one SDK instance should subscribe to a deliberate subset of cloud lines:
+
+```ts
+const app = await Spectrum({
+  providers: [
+    imessage.config({
+      clients: [
+        {
+          address: "line-1.example.com:443",
+          token: process.env.IMESSAGE_TOKEN!,
+          phone: "+15551111111",
+        },
+      ],
+    }),
   ],
 });
 ```
 
-Explicit `clients` still use the cloud provider; they are not a separate dedicated connection mode. Use them only when this SDK instance should subscribe to specific cloud lines, and keep their tokens current yourself. Shared versus dedicated is the line allocation attached to the project plan, described below.
+Explicit client tokens are not renewed automatically. Keep them current yourself and never log or commit them.
 
 ## Local provider
 
-Reading the local macOS Messages database requires the separate `@spectrum-ts/imessage-local` package. It talks to the Messages SQLite store directly and supports receiving and sending text, attachments, and universal contact content. Universal app content degrades to its URL. Reactions, threaded replies, edits, unsend, read receipts, effects, group creation, streaming text, native sharing of the agent's own contact card, and membership or group-metadata operations are unavailable; typing signals are accepted as no-ops.
+Reading a Mac's Messages database uses the separate `@spectrum-ts/imessage-local` package:
 
 ```bash
-bun add spectrum-ts @spectrum-ts/imessage-local
+npm install spectrum-ts @spectrum-ts/imessage-local
 ```
 
 ```ts
 import { Spectrum } from "spectrum-ts";
 import { localIMessage } from "@spectrum-ts/imessage-local";
 
-const app = await Spectrum({ providers: [localIMessage.config()] });
+const app = await Spectrum({
+  providers: [localIMessage.config()],
+});
 ```
 
-Local messages use `"local_imessage"` in `message.platform`; cloud messages use `"imessage"`. `space.create(user)` creates a deterministic 1:1 DM reference locally. Group creation (`space.create([a, b])`) throws because the local database cannot create chats; use `space.get(chatGuid)` for an existing group.
+The local provider supports receiving and sending text, attachments, and universal contact content. App cards fall back to their URL. It does not support reactions, threaded replies, edits, unsend, read receipts, effects, group creation, streaming text, chat backgrounds, rename, avatars, native contact-card sharing, or membership writes. Typing signals are accepted as no-ops.
 
-## Line model (cloud provider)
+`space.create(user)` creates a deterministic DM reference locally. Group creation throws; use `space.get(chatGuid)` for an existing local group conversation.
 
-| Plan | Line allocation | What end users see |
-|---|---|---|
-| **Free / Pro** | Shared pool — each end user is routed through a number from the pool | Normal iMessage from a number that may differ across recipients |
-| **Business** | Dedicated — all end users text the same number, which belongs to your project | Normal iMessage, always from the same number |
+## Line model
 
-**Auto-scale** is an opt-in Business feature: when traffic to a dedicated line nears its per-line capacity, Spectrum provisions an additional line. Managed-line concepts do not apply to `@spectrum-ts/imessage-local`, where you provide the Messages account on the Mac.
+| Plan | Line allocation | What end users see | Group behavior |
+|---|---|---|---|
+| **Free / Pro** | Shared pool | A normal iMessage from a pool number that may differ across recipients | Group creation and inbound group-change events are unavailable |
+| **Business** | Dedicated project line | The same project-owned number across recipients | Group creation and inbound group-change events are supported |
 
-## Quotas
+On shared-pool plans, recipients must be registered as project users before proactive outreach. A successful `space.create()` resolves a transport object; it does not prove that a later send is permitted or that the recipient consented.
 
-Default cloud quotas are 5,000 messages per server per day and 50 new conversations per line per day. The second limit counts the first message to a recipient that line has never contacted; replies in existing conversations do not count. On Free and Pro shared-pool plans, recipients must be registered as project users in the Photon Dashboard before outreach; otherwise sending fails with `Target not allowed for this project`. Dedicated Business lines are exempt from that allowlist. Contact `help@photon.codes` for an increase.
+Newly added or removed lines become visible at the next managed token renewal. Restart the application when a newly provisioned line must take effect immediately.
+
+## Quotas and consent
+
+Default cloud limits are 5,000 messages per server per day and 50 newly initiated conversations per line per day. Replies in existing conversations do not count as new conversations. Contact Photon before designing around a higher limit.
+
+Transport access is not permission for cold outreach. Initiate only after the recipient has opted in, honor stop requests, and design for genuine conversation rather than one-way blasts.
 
 ## Space types and per-phone routing
 
-iMessage spaces carry `type: "dm" | "group"` and a `phone` field. With multiple dedicated lines, pin a conversation to a specific line:
+iMessage spaces narrow to `type: "dm" | "group"` and expose their serving phone when available. With multiple dedicated lines, pin a conversation to one line:
 
 ```ts
-const dm = await im.space.create(alice, { phone: "+15559999999" });
+const im = imessage(app);
+const alice = await im.user("+15551111111");
+
+const dm = await im.space.create(alice, {
+  phone: "+15559999999",
+});
+
 const existing = await im.space.get("any;-;+15551111111", {
   phone: "+15559999999",
 });
 ```
 
-For `space.create`, omitting `phone` makes Spectrum pick at random from available dedicated lines. For `space.get`, `phone` is optional in shared mode or with one dedicated client but required when multiple dedicated clients are configured, including auto-scaled lines. Per-phone routing applies to **dedicated lines (Business plan) only**; on shared-pool plans the parameter is ignored. `space.create(user)` opens a 1:1 DM with either provider; group creation (`space.create([a, b])`) works on **dedicated cloud lines only** — the shared-pool cloud provider and local provider both reject groups.
+For `space.create`, omitting `phone` lets Spectrum choose from the available dedicated lines. For `space.get`, `phone` is required when more than one dedicated line could own the chat. Shared-pool routing ignores the dedicated-line phone selection.
 
-## Message effects
+Group creation works on dedicated cloud lines only. Shared cloud lines and the local provider reject group creation.
 
-Wrap text, `markdown(...)`, or `attachment(...)` with `effect()`. Effects only apply on iMessage; other platforms see the inner content unchanged.
+## Capability semantics
 
-```ts
-import { attachment } from "spectrum-ts";
-import { effect, imessage } from "spectrum-ts/providers/imessage";
+Before relying on a provider-specific action, identify whether iMessage guarantees native support, a fallback, warn-and-skip behavior, an accepted no-op, or a thrown error. Read [`../capability-semantics.md`](../capability-semantics.md) and the exact feature reference.
 
-await space.send(effect("Happy birthday!", imessage.effect.message.celebration));
-await space.send(effect(attachment("/path/to/photo.jpg"), imessage.effect.message.confetti));
-```
+This matters for reactions, replies, edits, unsend, reads, effects, backgrounds, app cards, group metadata, attachments, and contact-card sharing. A resolved promise does not by itself prove the recipient saw the action.
 
-| Bubble effects | |
+## Feature references
+
+Each feature has a focused reference so the agent does not load the entire iMessage surface for one operation.
+
+| Feature | Read |
 |---|---|
-| `imessage.effect.message.slam` | `"com.apple.MobileSMS.expressivesend.impact"` |
-| `imessage.effect.message.loud` | `"com.apple.MobileSMS.expressivesend.loud"` |
-| `imessage.effect.message.gentle` | `"com.apple.MobileSMS.expressivesend.gentle"` |
-| `imessage.effect.message.invisible` | `"com.apple.MobileSMS.expressivesend.invisibleink"` |
+| Message effects | [`imessage/message-effects.md`](./imessage/message-effects.md) |
+| Tapback reactions | [`imessage/tapback-reactions.md`](./imessage/tapback-reactions.md) |
+| Chat renaming | [`imessage/chat-renaming.md`](./imessage/chat-renaming.md) |
+| Chat backgrounds | [`imessage/chat-backgrounds.md`](./imessage/chat-backgrounds.md) |
+| Group avatars | [`imessage/group-avatars.md`](./imessage/group-avatars.md) |
+| Group membership | [`imessage/group-membership.md`](./imessage/group-membership.md) |
+| Inbound group events | [`imessage/inbound-group-events.md`](./imessage/inbound-group-events.md) |
+| Inbound read receipts | [`imessage/inbound-read-receipts.md`](./imessage/inbound-read-receipts.md) |
+| App and mini-app content | [`imessage/apps.md`](./imessage/apps.md) |
+| Contact-card sharing | [`imessage/contact-card-sharing.md`](./imessage/contact-card-sharing.md) |
+| Provider message metadata | [`imessage/message-metadata.md`](./imessage/message-metadata.md) |
+| Fetching attachments | [`imessage/fetching-attachments.md`](./imessage/fetching-attachments.md) |
+| Troubleshooting | [`imessage/troubleshooting.md`](./imessage/troubleshooting.md) |
 
-| Screen effects | |
-|---|---|
-| `imessage.effect.message.confetti` | `"com.apple.messages.effect.CKConfettiEffect"` |
-| `imessage.effect.message.fireworks` | `"com.apple.messages.effect.CKFireworksEffect"` |
-| `imessage.effect.message.balloons` | `"com.apple.messages.effect.CKBalloonEffect"` |
-| `imessage.effect.message.heart` | `"com.apple.messages.effect.CKHeartEffect"` |
-| `imessage.effect.message.lasers` | `"com.apple.messages.effect.CKLasersEffect"` |
-| `imessage.effect.message.celebration` | `"com.apple.messages.effect.CKHappyBirthdayEffect"` |
-| `imessage.effect.message.sparkles` | `"com.apple.messages.effect.CKSparklesEffect"` |
-| `imessage.effect.message.spotlight` | `"com.apple.messages.effect.CKSpotlightEffect"` |
-| `imessage.effect.message.echo` | `"com.apple.messages.effect.CKEchoEffect"` |
+## See also
 
-## Tapbacks
-
-React with an emoji glyph — `message.react(glyph)`. iMessage maps these six glyphs to native tapbacks; any other emoji is sent as a custom-emoji reaction. There are **no** `imessage.tapbacks.*` constants. Pass a literal glyph or use Spectrum's universal `Emoji` aliases.
-
-| Tapback | Glyph |
-|---|---|
-| Love | `"❤️"` |
-| Like | `"👍"` |
-| Dislike | `"👎"` |
-| Laugh | `"😂"` |
-| Emphasize | `"‼️"` |
-| Question | `"❓"` |
-
-```ts
-import { Emoji } from "spectrum-ts";
-
-await message.react("😂");
-await message.react(Emoji.laugh);
-```
+- [Spectrum iMessage connection and routing](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing)
+- [Spectrum iMessage messaging features](https://photon.codes/docs/spectrum-ts/providers/imessage/messaging-features)
+- [`../spaces-and-users.md`](../spaces-and-users.md) for proactive vs reactive conversations
+- [`../reactions-and-replies.md`](../reactions-and-replies.md) for universal action APIs
+- The repository's `imessage` skill for low-level hosted or local iMessage SDKs
