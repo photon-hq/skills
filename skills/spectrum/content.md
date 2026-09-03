@@ -4,6 +4,22 @@
 
 Every `send` / `reply` accepts a plain string or a content builder. Common message-body builders are `text`, `markdown`, `attachment`, `voice`, `contact`, `richlink`, `app`, `poll`, `option`, `group`, and `custom`; provider-specific and action builders are covered in their topic files.
 
+## Focused references
+
+This page remains the compact end-to-end reference. Load one of the focused files when the request needs the complete contract for a specific content family or action.
+
+| Need | Read |
+|---|---|
+| Plain text, Markdown, and text streams | [`content/text-and-markdown.md`](./content/text-and-markdown.md) |
+| Files and voice notes | [`content/attachments-and-voice.md`](./content/attachments-and-voice.md) |
+| Contacts and native link previews | [`content/contacts-and-rich-links.md`](./content/contacts-and-rich-links.md) |
+| Tappable app cards and in-place card updates | [`content/app-cards.md`](./content/app-cards.md) |
+| Polls, visual groups, and provider raw content | [`content/polls-groups-and-custom.md`](./content/polls-groups-and-custom.md) |
+| Threaded replies, edits, and unsend | [`content/replies-edits-and-unsend.md`](./content/replies-edits-and-unsend.md) |
+| Read receipts and typing indicators | [`content/read-and-typing.md`](./content/read-and-typing.md) |
+| Rename, avatar, membership, and leave actions | [`content/rename-avatar-and-membership.md`](./content/rename-avatar-and-membership.md) |
+| Variadic sends and single-consumption streaming | [`content/composing-and-streaming.md`](./content/composing-and-streaming.md) |
+
 ## Text
 
 ```ts
@@ -88,6 +104,8 @@ import { app } from "spectrum-ts";
 
 await space.send(app("https://example.com/dashboard", { live: true }));
 ```
+
+For iMessage mini-app card sessions and in-place updates, read [`content/app-cards.md`](./content/app-cards.md) and the provider-specific app reference before relying on that behavior.
 
 ## Polls
 

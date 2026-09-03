@@ -1,120 +1,313 @@
 # Command reference
 
-Every command in the `photon` CLI except the `spectrum` group (which has its own file: [`spectrum.md`](./spectrum.md)). For environment variables and resolution order, see [`environment.md`](./environment.md).
+Every command in the `photon` CLI except the `spectrum` group, which has its own file: [`spectrum.md`](./spectrum.md). For environment variables and resolution order, see [`environment.md`](./environment.md).
+
+Run `photon <command> --help` before scripting an uncommon flag. Root flags such as `--debug` belong on the root command; command-specific flags belong after the subcommand.
+
+## Command tree
+
+```text
+photon
+├── ping
+├── env current
+├── login
+├── logout
+├── whoami
+├── auth status
+├── config show
+├── profile
+│   ├── show
+│   ├── init
+│   └── update
+├── projects
+│   ├── ls
+│   ├── show
+│   ├── create
+│   ├── update
+│   ├── delete
+│   ├── regenerate-secret
+│   ├── open
+│   ├── upgrade
+│   └── check-phone
+├── spectrum
+│   ├── profile show | update
+│   ├── users ls | add | remove
+│   ├── lines ls | add | remove
+│   ├── platforms ls | enable | disable
+│   └── avatar upload
+└── billing
+    ├── plans
+    ├── show
+    ├── checkout
+    └── manage
+```
 
 ## Common flags
 
-These appear on most commands:
+These appear on most project-scoped or authenticated commands:
 
-| Flag | Meaning |
-|---|---|
-| `--api-host <url>` | Target backend. Falls back to `$PHOTON_API_HOST`, then production (`https://app.photon.codes`). |
-| `-t, --token <token>` | API token; overrides stored credentials. Falls back to `$PHOTON_TOKEN` / `$DASHBOARD_TOKEN`. |
-| `-p, --project <id>` | Project id; overrides `$PHOTON_PROJECT_ID`. Project-scoped commands only. |
-| `--json` | Machine-readable JSON output (also suppresses browser-opening). |
-| `-y, --yes` | Skip the confirmation prompt on destructive commands. |
-| `--no-browser` | Print the URL instead of launching a browser. |
-| `--debug` | Global flag — verbose HTTP request/response logging. |
+| Flag | Environment | Meaning |
+|---|---|---|
+| `--api-host <url>` | `PHOTON_API_HOST` | Target backend; defaults to `https://app.photon.codes`. |
+| `-t, --token <token>` | `PHOTON_TOKEN` | Use this access token instead of stored credentials. |
+| `-p, --project <id>` | `PHOTON_PROJECT_ID` | Target project for project-scoped commands. |
+| `--json` | — | Machine-readable output where supported; browser flows return a URL instead of opening it. |
+| `-y, --yes` | — | Skip a destructive-action confirmation. Use only after explicit authorization. |
+| `--no-browser` | — | Print a URL instead of opening the default browser. |
+
+Root-level flags:
+
+| Flag | Environment | Meaning |
+|---|---|---|
+| `--debug` | `PHOTON_DEBUG=1` | Verbose request and response logs to stderr. Verify secrets remain redacted before sharing logs. |
+| `--version`, `-v` | — | Print the CLI version. |
+| `--no-color` | `NO_COLOR=1` | Disable colored output. |
 
 ## Diagnostics
 
 ### `photon ping`
-Hit the dashboard `/api/health` endpoint; prints HTTP status + elapsed time.
-- `--api-host <url>`, `-u, --url <url>` (raw URL, bypasses env resolution).
 
-### `photon env [current]`
-Show the active backend (name + URL).
-- `--api-host <url>`.
+Hit the Dashboard health endpoint and print the result. Use `-u` or `--url` to test an arbitrary URL without normal backend resolution:
 
-### `photon config [show]`
-Dump the active configuration — config dir, current backend, active project (`$PHOTON_PROJECT_ID` or none), and which backends have stored credentials. No secrets printed.
-- `--json`.
+```bash
+photon ping
+photon ping -u https://custom.example.com
+```
+
+### `photon env current`
+
+Show the backend the next command will target:
+
+```bash
+photon env current
+```
+
+### `photon config show`
+
+Print active configuration without secrets — config directory, selected backend, active project, and relevant environment resolution:
+
+```bash
+photon config show
+photon config show --json
+```
 
 ## Authentication
 
 ### `photon login`
-Device-authorization login. Prints a verification URL + user code, opens the browser, polls until approved, stores credentials at `~/.config/photon/credentials/<backend>.json` (mode `600`).
-- `--api-host <url>`, `--no-browser`.
+
+Start the device-authorization flow. The user approves in a browser; the CLI stores a token for the selected backend.
+
+```bash
+photon login
+photon login --no-browser
+photon login --api-host https://staging-app.photon.codes --no-browser
+```
 
 ### `photon logout`
-Clear stored credentials for the active backend (best-effort server-side revoke first).
-- `--api-host <url>`.
+
+Revoke the active backend session and remove its local credential file:
+
+```bash
+photon logout
+```
 
 ### `photon whoami`
-Show the user authenticated for the active backend — name, email, backend, sign-in time, profile type.
-- `--api-host <url>`, `-t, --token <token>`.
+
+Show the user authenticated for the selected backend:
+
+```bash
+photon whoami
+photon whoami --json
+```
 
 ### `photon auth status`
-Table of every backend you've authenticated against (active backend marked `●`; corrupt credential files flagged).
-- `--json`.
+
+Show credential status across every backend stored on the machine:
+
+```bash
+photon auth status
+photon auth status --json
+```
 
 ## Profile
 
-Your developer/organization profile (onboarding details), distinct from the per-project Spectrum profile in [`spectrum.md`](./spectrum.md).
+The `photon profile` group manages the developer or organization profile, which is separate from a project's Spectrum profile.
 
-### `photon profile [show]`
-Show your profile — type (developer/organization), platforms, background, company name, referral source.
-- `--api-host`, `-t/--token`, `--json`.
+### `photon profile show`
+
+```bash
+photon profile show
+photon profile show --json
+```
 
 ### `photon profile init`
-Create your profile (fails if one already exists). Interactive, or pass flags:
-- `--type <developer|organization>`, `--platforms <list>`, `--background <text>`, `--company-name <name>` (organization only), plus `--api-host`, `-t/--token`, `--json`.
 
-### `photon profile update` (alias `edit`)
-Update an existing profile; preserves unset fields. Requires at least one field flag. Same flags as `init`.
+Create the profile interactively or pass the fields supported by the installed CLI:
+
+```bash
+photon profile init
+```
+
+### `photon profile update`
+
+Update selected fields and preserve the others:
+
+```bash
+photon profile update --display-name "Jane Doe"
+```
+
+Alias: `profile edit`.
 
 ## Projects
 
-`photon projects` (alias `project`) — manage Photon Dashboard projects.
+`photon projects` manages top-level Photon projects.
 
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `list` (default) | `ls` | Table of your projects: id, name, location, status (running/paused/error), platforms, updated. |
-| `show [id]` | `get` | Details for one project (defaults to `$PHOTON_PROJECT_ID`). |
-| `create` | `new` | Create a project. Interactive, or `--name` required non-interactively. Returns the project **id**. |
-| `update [id]` | `edit`, `rename` | Rename a project. Requires `--name`. (Only the name is mutable via this route.) |
-| `delete [id]` | `rm`, `remove` | Permanently delete a project. Confirms unless `-y/--yes`. |
-| `secret [id]` | `get-secret` | Print the existing Spectrum API secret (read-only — does **not** rotate). Bare value on stdout, or `--json`. |
-| `regenerate-secret [id]` | `rotate-secret` | **Rotate** the Spectrum API secret (replaces it). Shown **once**. Confirms unless `-y/--yes`. |
-| `open [id]` | — | Open the project in the dashboard web UI. `--no-browser` to print the URL. |
-| `upgrade [id] [tier]` | — | Subscribe / pay. Smart-routes to Stripe checkout or the billing portal. Tiers: `pro`, `business`, `enterprise`. |
-| `check-phone <number>` | — | Check whether a phone number is available on Spectrum. |
-
-Notable flags:
-- **`create`**: `-n/--name`, `-l/--location` (default `United States`), `--platforms <list>` (`imessage`, `whatsapp_business`, `voice`), `--template`, `--observability`.
-- **`upgrade`**: `--plan <price-id>` (raw Stripe price id, escape hatch), `--qty <n>`, `--checkout` (force checkout), `--manage` (force Stripe portal). With no tier/flags it inspects the current subscription to choose the route. `[id]` and `[tier]` are both positional — `photon projects upgrade business` works when `$PHOTON_PROJECT_ID` is set.
-- All project subcommands accept the common `--api-host`, `-t/--token`, `--json` (and `-p/--project` where an `[id]` is taken).
+### List and show
 
 ```bash
 photon projects ls
-photon projects show                       # uses $PHOTON_PROJECT_ID
-photon projects create --name "My App"
-photon projects secret                     # read the existing secret (no rotation)
-photon projects regenerate-secret          # rotate — new secret, shown once
-photon projects upgrade business           # business tier (see workflows.md)
-photon projects check-phone +14155551234
+photon projects ls --json
+photon projects show
+photon projects show <project-id> --json
+```
+
+Aliases: `projects list`, `project ls`, and `projects get`.
+
+### Create
+
+Without flags, `create` opens an interactive flow. For scripts and agents, pass the values directly:
+
+```bash
+photon projects create \
+  --name "My Project" \
+  --location us-east \
+  --spectrum \
+  --json
+```
+
+| Flag | Meaning |
+|---|---|
+| `--name <name>` | Project name. |
+| `--location <location>` | Deployment region accepted by the current backend. |
+| `--spectrum` | Enable Spectrum for the project. |
+
+Alias: `projects new`.
+
+### Update
+
+```bash
+photon projects update <project-id> --name "New Name"
+```
+
+Aliases: `projects edit`, `projects set`.
+
+### Delete
+
+```bash
+photon projects delete <project-id>
+photon projects delete <project-id> -y
+```
+
+Deletion is permanent. Confirm the exact project and impact before using `-y`. Aliases: `projects rm`, `projects remove`.
+
+### Rotate the Spectrum project secret
+
+```bash
+photon projects regenerate-secret <project-id>
+photon projects regenerate-secret -y
+```
+
+This **rotates** the credential and invalidates the old value immediately. It is not a read-only secret command. Inventory every deployment using the old secret and confirm before running it.
+
+Alias: `projects rotate-secret`.
+
+### Open the project
+
+```bash
+photon projects open
+photon projects open <project-id>
+photon projects open --no-browser
+```
+
+### Upgrade a subscription
+
+`projects upgrade` inspects the current subscription and routes the user to Checkout or the Stripe Portal:
+
+```bash
+photon projects upgrade
+photon projects upgrade pro
+photon projects upgrade <project-id> business
+photon projects upgrade business --qty 5
+photon projects upgrade --checkout
+photon projects upgrade --manage
+photon projects upgrade --plan price_xxx
+photon projects upgrade --no-browser --json
+```
+
+Available tiers are `pro`, `business`, and `enterprise`.
+
+| Flag | Meaning |
+|---|---|
+| `[tier]` | Positional tier; skips the interactive picker. |
+| `--plan <price-id>` | Explicit Stripe price ID. |
+| `--qty <number>` | Checkout quantity. |
+| `--checkout` | Force Checkout. |
+| `--manage` | Force the Stripe Portal; takes precedence over tier, plan, and checkout. |
+| `--no-browser` | Print the destination URL. |
+| `--json` | Return `{ action, url, tier? }`. |
+
+Any paid action or subscription change requires explicit user confirmation.
+
+### Check phone-number availability
+
+```bash
+photon projects check-phone +15551234567
 ```
 
 ## Billing
 
-`photon billing` — subscription management for a project (defaults to `$PHOTON_PROJECT_ID`).
+The `photon billing` group requires an active project.
 
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `plans` | — | List available subscription plans (name, price id, price, interval). |
-| `show` | — | Show the project's current subscription (tier, status, id). |
-| `checkout [tier]` | — | Start a checkout. Interactive picker if no tier/`--plan`. Tiers: `pro`, `business`, `enterprise`. |
-| `manage` | `portal` | Open the Stripe customer portal (downgrade, cancel, change card). |
-
-Notable flags:
-- **`checkout`**: `--plan <price-id>`, `--qty <n>`, `--no-browser`, `--json` (prints the URL, skips opening the browser).
-- All accept `-p/--project`, `--api-host`, `-t/--token`, `--json`.
+### List plans
 
 ```bash
 photon billing plans
-photon billing show
-photon billing checkout business
-photon billing manage
 ```
 
-> `projects upgrade` and `billing checkout` overlap. `projects upgrade` is the smart, one-shot path (it figures out checkout vs. portal for you); `billing checkout` / `billing manage` are the explicit forms. See [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).
+### Show the current subscription
+
+```bash
+photon billing show
+photon billing show --json
+```
+
+### Start Checkout
+
+```bash
+photon billing checkout
+photon billing checkout pro
+photon billing checkout business --qty 5
+photon billing checkout --plan price_xxx --no-browser --json
+```
+
+Without a tier or price ID, the CLI opens an interactive plan picker. Checkout spends money; present the exact tier and quantity and obtain confirmation first.
+
+### Open the Stripe Portal
+
+```bash
+photon billing manage
+photon billing manage --no-browser
+```
+
+Alias: `billing portal`. The Portal handles payment methods, plan changes, invoices, downgrades, and cancellation.
+
+## Spectrum resources
+
+Use the dedicated [`spectrum.md`](./spectrum.md) reference for the project Spectrum profile, users, lines, platforms, and avatar upload.
+
+## See also
+
+- [Photon CLI overview](https://photon.codes/docs/cli/overview)
+- [Photon CLI projects](https://photon.codes/docs/cli/projects)
+- [Photon CLI billing](https://photon.codes/docs/cli/billing)
+- [Photon CLI profile and utilities](https://photon.codes/docs/cli/profile-and-utilities)

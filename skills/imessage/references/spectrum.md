@@ -16,17 +16,21 @@ import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 
 const app = await Spectrum({
-  projectId: process.env.PROJECT_ID!,
-  projectSecret: process.env.PROJECT_SECRET!,
+  projectId: process.env.SPECTRUM_PROJECT_ID!,
+  projectSecret: process.env.SPECTRUM_PROJECT_SECRET!,
   providers: [imessage.config()],
 });
 
-for await (const [space, message] of app.messages) {
-  if (message.direction === "outbound") continue;
-  if (message.content.type !== "text") continue;
+try {
+  for await (const [space, message] of app.messages) {
+    if (message.direction === "outbound") continue;
+    if (message.content.type !== "text") continue;
 
-  await message.react("👍");
-  await message.reply(`echo: ${message.content.text}`);
+    await message.react("👍");
+    await message.reply(`echo: ${message.content.text}`);
+  }
+} finally {
+  await app.stop();
 }
 ```
 
@@ -47,7 +51,7 @@ const app = await Spectrum({
 });
 ```
 
-The local provider receives and sends text, attachments, and universal contact content. Universal app content degrades to its URL, while typing is accepted as a no-op. Polls, effects, and other unsupported content types throw an unsupported-content error. Reactions, replies, edits, unsend, read receipts, and streaming text are also unsupported. Group membership and group metadata changes are unavailable.
+The local provider receives and sends text, attachments, and universal contact content. Universal app content degrades to its URL, while typing is accepted as a no-op. Polls, effects, and other unsupported content types are skipped or rejected according to Spectrum's current capability semantics. Reactions, replies, edits, unsend, read receipts, streaming text, backgrounds, rename, avatars, native contact-card sharing, and membership writes are unavailable.
 
 Within local space creation, `space.create(user)` returns a deterministic 1:1 DM reference. Both `space.create([])` and a multi-user form such as `space.create([a, b])` throw. Resolve an existing group with `space.get(chatGuid)`.
 
@@ -87,8 +91,13 @@ await message.react("❤️");
 
 Native tapback glyphs are `❤️`, `👍`, `👎`, `😂`, `‼️`, and `❓`. Any other emoji becomes a custom-emoji reaction. `imessage.effect.message.lasers` is `CKLasersEffect`; `imessage.effect.message.celebration` is `CKHappyBirthdayEffect`.
 
+## Capability check
+
+Read [`../../spectrum/capability-semantics.md`](../../spectrum/capability-semantics.md) before treating a resolved promise as proof that an optional operation was rendered. Depending on the provider and content type, the result can be native support, a fallback, warn-and-skip, an accepted no-op, or a thrown resolver error.
+
 ## Sources
 
 - [Spectrum getting started](https://photon.codes/docs/spectrum-ts/getting-started)
-- [iMessage provider](https://photon.codes/docs/spectrum-ts/providers/imessage)
+- [iMessage connection and routing](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing)
+- [iMessage messaging features](https://photon.codes/docs/spectrum-ts/providers/imessage/messaging-features)
 - [iMessage troubleshooting](https://photon.codes/docs/spectrum-ts/troubleshooting/imessage)
