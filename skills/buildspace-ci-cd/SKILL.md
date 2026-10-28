@@ -3,7 +3,7 @@ name: buildspace-ci-cd
 description: >
   Configure and troubleshoot BuildSpace reusable GitHub Actions workflows and blocks for automated releases.
   Covers Rust, TypeScript (single package and monorepo), Go, Swift package, macOS .pkg (binary and payload-only),
-  dylib (Xcode and Makefile), generic release, AI-based versioning/release notes, README freshness checks,
+  dylib (Makefile), generic release, AI-based versioning/release notes, README freshness checks,
   skills documentation checks, labels, permissions, secrets, Homebrew tap updates, Jamf uploads,
   dry-run testing, and custom block composition.
   Use when users mention BuildSpace, release automation, reusable workflows, GitHub Actions CI/CD,
@@ -43,7 +43,6 @@ Pick exactly one primary workflow based on project type:
 | macOS `.pkg` without binary (payload/scripts only) | `pkg-release.yml` | PR label `release` |
 | macOS `.pkg` PR build (payload/scripts only) | `pkg-release-pr.yml` | Every PR commit |
 | Swift macOS `.pkg` PR build previews | `swift-pkg-pr.yml` | Every PR commit |
-| macOS dylib release (Xcode workspace) | `dylib-release.yml` | PR label `release` |
 | macOS dylib release (Makefile) | `makefile-dylib-release.yml` | PR label `release` |
 | Generic release (version + GitHub Release only) | `release.yaml` | PR label `release` |
 | README freshness check on PRs | `check-readme.yaml` | Every PR |
@@ -80,7 +79,7 @@ Behavior nuance to keep accurate:
 
 - `typescript-monorepo-release` supports prerelease path directly.
 - `typescript-service-release`, `rust-service-release`, and `go-service-release` gate release jobs on `release` (or forced input), and treat prerelease as flavor once release is active.
-- `swift-release`, `pkg-release`, `dylib-release`, and `makefile-dylib-release` check only `release`.
+- `swift-release`, `pkg-release`, and `makefile-dylib-release` check only `release`.
 - `release.yaml` (generic) checks `release` label and supports a `release` boolean input to force.
 
 ## Implementation Procedure
@@ -291,25 +290,6 @@ Builds a macOS `.pkg` (with Swift binary) on every PR commit, posts/updates a si
 |---|---|---|
 | `SECRET_ENV_VARS` | No | Compile-time env vars written to `.env` |
 
-### dylib-release.yml
-
-Release pipeline for macOS dynamic libraries built from an Xcode workspace with CocoaPods. Label check, AI version + release notes, install CocoaPods, build dylib (arm64e), create GitHub Release with `.dylib` artifact.
-
-**Inputs:**
-
-| Input | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `workspace` | string | Yes | — | Path to `.xcworkspace` |
-| `scheme` | string | Yes | — | Xcode scheme to build |
-| `dylib-name` | string | Yes | — | Name of the output dylib (e.g., `BlueBubblesHelper`) |
-| `project-directory` | string | Yes | — | Directory containing the Podfile |
-
-**Secrets:**
-
-| Secret | Required | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | Yes | For AI-powered versioning and release notes |
-
 ### makefile-dylib-release.yml
 
 Release pipeline for macOS dynamic libraries built from a Makefile. Label check, AI version + release notes, `make release`, create GitHub Release with `.dylib` artifact.
@@ -391,6 +371,10 @@ For `typescript-monorepo-release`:
 - Pre-release npm tag is automatically `beta` when prerelease is active.
 - Uses `release/YYYY-MM-DD.N` date-based tags since there's no single version.
 
+## Package Staging Notes
+
+- `package-stage.yml` supports `setup-pnpm: false` for npm-only repositories. Set `setup-pnpm: false` and `install: npm ci` to skip pnpm setup entirely. Node supplies npm; the workflow skips pnpm's package-manager-field check. Existing callers still set up their pinned pnpm by default, and `bun-version` continues to select Bun in its place.
+
 ## Rust/Go Notes
 
 - Rust workflow can:
@@ -410,12 +394,13 @@ For `typescript-monorepo-release`:
 - Packages are **always unsigned** (`DEVELOPER_ID_INSTALLER_NAME` is deprecated and ignored).
 - Compile-time env vars are passed via `SECRET_ENV_VARS` secret (written to `.env`).
 - Jamf upload is optional — set `jamf-url` input and provide `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` secrets.
+- **Dependency checking on promotion.** Swift promotion verifies that every dependency fetched from one of the owner's GitHub repositories is a production release (a published, non-prerelease release under a `vX.Y.Z` or `X.Y.Z` tag). A package is checked by the pins in its committed `Package.resolved`; a library (or a package without `Package.resolved`) is checked by the version requirements in `Package.swift`. Branch pins, bare revisions, staging versions, and prereleases all block promotion. Set `private-deps: true` (with `APP_ID` + `APP_PRIVATE_KEY` secrets) when a dependency is one of the owner's private repositories.
 
 ## Dylib Notes
 
-- `dylib-release.yml` is for projects using an Xcode workspace with CocoaPods. Builds arm64e dylib.
 - `makefile-dylib-release.yml` is for projects using a Makefile. Runs `make release` and embeds version.
-- Both create a GitHub Release with the `.dylib` as an artifact.
+- Creates a GitHub Release with the `.dylib` as an artifact.
+- The legacy Xcode/CocoaPods dylib workflow (`dylib-release.yml`) and its `build-dylib` and `install-cocoapods` blocks have been removed.
 
 ## README Check Guidance
 
@@ -424,6 +409,7 @@ Use `check-readme.yaml` for PR docs drift detection:
 - `blocking: false` (default): warning comment only.
 - `blocking: true`: fails job when README appears stale.
 - Requires `OPENAI_API_KEY` and PR write permission for comments.
+- Incomplete or malformed AI output fails the check without clearing existing warnings. A warning comment is only removed after a confirmed clean verdict.
 
 ## Skills Check Guidance
 
@@ -433,6 +419,7 @@ Use `check-skills.yaml` for skills documentation drift detection:
 - `fail_on_missing_skills: true`: fails job when skills appear outdated.
 - Requires `OPENAI_API_KEY` and PR write permission for comments.
 - For private skills repos, provide `SKILLS_REPO_TOKEN` (PAT with repo access).
+- Incomplete or malformed AI output fails the check without clearing existing warnings. A warning comment is only removed after a confirmed clean verdict.
 
 ## Blocks Reference
 
@@ -451,7 +438,7 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 | Block | Path | Purpose |
 |---|---|---|
 | `check-pr-label` | `.github/blocks/check-pr-label/action.yaml` | Check PR labels to decide if release should trigger |
-| `comment-on-pr` | `.github/blocks/comment-on-pr/action.yaml` | Post or update a single PR comment (idempotent via `comment-key`) |
+| `comment-on-pr` | `.github/blocks/comment-on-pr/action.yaml` | Post, update, or remove a marked PR comment (idempotent via `comment-key`; `state: absent` removes) |
 | `check-readme` | `.github/blocks/check-readme/action.yaml` | AI-powered README freshness check |
 | `check-skills` | `.github/blocks/check-skills/action.yaml` | AI-powered skills documentation freshness check |
 
@@ -464,9 +451,7 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 | `typescript-build` | `.github/blocks/typescript-build/action.yaml` | Build TypeScript project using Bun |
 | `swift-build` | `.github/blocks/swift-build/action.yml` | Build Swift binary (SPM, supports `.env` injection) |
 | `swift-pkg` | `.github/blocks/swift-pkg/action.yml` | Create macOS `.pkg` from binary and/or payload/scripts |
-| `build-dylib` | `.github/blocks/build-dylib/action.yml` | Build macOS dylib from Xcode workspace (arm64e) |
 | `build-makefile-dylib` | `.github/blocks/build-makefile-dylib/action.yml` | Build macOS dylib from Makefile |
-| `install-cocoapods` | `.github/blocks/install-cocoapods/action.yml` | Cache and install CocoaPods dependencies |
 
 ### Publish Blocks
 
@@ -493,7 +478,7 @@ If release did not run:
 - For publish failures, test with `dry-run: true` and verify auth token scopes.
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
 - For Jamf uploads, confirm `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` are set and `jamf-url` is a valid Jamf Pro URL.
-- For dylib builds, confirm Xcode workspace/scheme or Makefile exists and produces expected output.
+- For dylib builds, confirm Makefile exists and produces expected output.
 
 ## Output Format for Agent Responses
 
