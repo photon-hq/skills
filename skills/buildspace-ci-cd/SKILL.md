@@ -3,9 +3,9 @@ name: buildspace-ci-cd
 description: >
   Configure and troubleshoot BuildSpace reusable GitHub Actions workflows and blocks for automated releases.
   Covers Rust, TypeScript (single package and monorepo), Go, Swift package, macOS .pkg (binary and payload-only),
-  dylib (Xcode and Makefile), generic release, AI-based versioning/release notes, README freshness checks,
+  dylib (Makefile), generic release, AI-based versioning/release notes, README freshness checks,
   skills documentation checks, labels, permissions, secrets, Homebrew tap updates, Jamf uploads,
-  dry-run testing, and custom block composition.
+  label-free staging and promotion, dry-run testing, and custom block composition.
   Use when users mention BuildSpace, release automation, reusable workflows, GitHub Actions CI/CD,
   or publishing to npm/crates/Homebrew/Jamf.
   Keywords: buildspace, ci/cd, github actions, release automation, reusable workflows, npm, crates,
@@ -31,19 +31,32 @@ Default recommendation: use a prebuilt workflow unless the user explicitly needs
 
 ## Workflow Selection
 
-Pick exactly one primary workflow based on project type:
+Use stage/promote for supported packages and Swift products:
+
+| Project type | Workflow pair | Trigger |
+|---|---|---|
+| npm package on GitHub Packages or npmjs | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
+| Swift executable packaged as macOS `.pkg` | `swift-stage.yml` + `swift-promote.yml` | Push to main stages; dispatch from main and approval promote |
+| SwiftPM library | `swift-stage.yml` + `swift-promote.yml`, both with `library: true` | Push to main stages; dispatch from main and approval promote |
+
+Follow the [package guide](https://github.com/photon-hq/buildspace#package-stage-and-promote)
+or [Swift guide](https://github.com/photon-hq/buildspace#swift-stage-and-promote)
+for caller YAML, pack contracts, permissions, and approval settings. Neither pair uses release labels or requires an AI API key.
+
+The following release workflows remain for compatibility. Keep their gates until each caller has a supported replacement.
+Package stage/promote does not replace standalone Rust/Go binaries, crates.io publishing, or independent monorepo versioning.
+Swift stage/promote does not replace payload-only packages or Makefile dylibs. PR checks and previews run independently of release labels.
 
 | Project type | Workflow file | Trigger |
 |---|---|---|
 | Rust binary/library | `rust-service-release.yaml` | PR label `release` |
 | TypeScript/JavaScript single package | `typescript-service-release.yaml` | PR label `release` |
-| TypeScript monorepo (multiple packages) | `typescript-monorepo-release.yaml` | PR label `release` |
+| TypeScript monorepo (multiple packages) | `typescript-monorepo-release.yaml` | PR label `release` or `prerelease`, or corresponding input |
 | Go binary | `go-service-release.yaml` | PR label `release` |
-| Swift macOS `.pkg` (with compiled binary) | `swift-release.yml` | PR label `release` |
+| Swift macOS `.pkg` (with compiled binary) | `swift-release.yml` | PR label `release` or `prerelease`, or corresponding input |
 | macOS `.pkg` without binary (payload/scripts only) | `pkg-release.yml` | PR label `release` |
 | macOS `.pkg` PR build (payload/scripts only) | `pkg-release-pr.yml` | Every PR commit |
 | Swift macOS `.pkg` PR build previews | `swift-pkg-pr.yml` | Every PR commit |
-| macOS dylib release (Xcode workspace) | `dylib-release.yml` | PR label `release` |
 | macOS dylib release (Makefile) | `makefile-dylib-release.yml` | PR label `release` |
 | Generic release (version + GitHub Release only) | `release.yaml` | PR label `release` |
 | README freshness check on PRs | `check-readme.yaml` | Every PR |
@@ -56,7 +69,7 @@ Always verify these before writing YAML:
 1. **Inputs**: service/package names, paths, build command, package lists, Homebrew tap info, Jamf config.
 2. **Secrets**:
    - Always required for AI features: `OPENAI_API_KEY`
-   - npm publishing: `NPM_TOKEN`
+   - Legacy npm publishing: `NPM_TOKEN`; modern npmjs staging/promotion uses trusted publishing
    - crates publishing: `CARGO_REGISTRY_TOKEN`
    - Swift compile-time env vars: `SECRET_ENV_VARS`
    - Jamf upload: `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET`
@@ -70,18 +83,29 @@ Always verify these before writing YAML:
 
 ## Release Trigger Rules (Important)
 
-BuildSpace is label-gated by default.
+### Stage and promote
 
-- Standard release label: `release`
-- Optional prerelease label: `prerelease`
-- No label usually means no release job.
+Merge to main to stage a build without a release label. Promotion verifies the stored candidate and publishes it without rebuilding.
+Use the default production environment approval path. Staging is created on the first staging run; environment setup is not a prerequisite for merging the caller. Before the first production promotion, have a repository administrator run the [README environment setup one-liner](https://github.com/photon-hq/buildspace#package-stage-and-promote) to configure main-only `staging` and `production` environments with at least one required production reviewer from CODEOWNERS or explicit arguments. A modern stage workflow's `dry-run: true` verifies and packs without publishing.
 
-Behavior nuance to keep accurate:
+### Legacy direct release
 
-- `typescript-monorepo-release` supports prerelease path directly.
-- `typescript-service-release`, `rust-service-release`, and `go-service-release` gate release jobs on `release` (or forced input), and treat prerelease as flavor once release is active.
-- `swift-release`, `pkg-release`, `dylib-release`, and `makefile-dylib-release` check only `release`.
-- `release.yaml` (generic) checks `release` label and supports a `release` boolean input to force.
+- Single-package TypeScript, Rust, Go, and generic release require `release` or `release: true`.
+- Monorepo and Swift also accept `prerelease` or `prerelease: true` as an entry gate.
+- Single-package TypeScript, Rust, and Go use prerelease only as a mode once release is authorized.
+- Payload-only packages and Makefile dylibs require the `release` label; they expose no boolean override.
+- `release: true` does not bypass a failed checker or override prerelease mode.
+- Wrappers use fixed label lists. They no longer accept `labels-to-check`; GitHub rejects callers that still pass it.
+
+Legacy `dry-run` is not a pipeline-wide write prohibition. Version commits, GitHub Releases, and configured Rust Homebrew updates can still write.
+`no-npm-publish` disables npmjs publication, not version commits or GitHub Releases.
+
+### Label retirement
+
+Remove obsolete release labels from migration PRs. Delete repository label definitions only after default-branch cutover, completed legacy runs, and verification of independent automation.
+Check external label producers to prevent reattachment. Label deletion does not require production promotion.
+Retain legacy secrets separately while active consumers or a documented rollback need them. Keep shared compatibility workflows until their callers migrate.
+Git tags, GitHub prerelease properties, and registry `staging`/`latest` tags are not obsolete PR labels.
 
 ## Implementation Procedure
 
@@ -89,11 +113,11 @@ When asked to set up BuildSpace in a repo:
 
 1. Detect repo type (Rust, TS single, TS monorepo, Go, Swift, macOS pkg, dylib).
 2. Confirm publish targets (GitHub only, npm, crates, Jamf, Homebrew tap).
-3. Create a caller workflow in the user repo (`.github/workflows/release.yaml` or `ci.yaml`) with `uses: photon-hq/buildspace/...@v1`.
+3. Read the chosen workflow at a reviewed commit of main, then pin that SHA in each caller.
 4. Wire `with:` inputs and `secrets:` exactly for that workflow.
 5. Add recommended permissions block.
-6. Add `dry-run: true` for first validation run unless the user requests immediate publish.
-7. Explain how to trigger (`release` label + merge path, or forced `release: true`).
+6. Validate modern staging with `dry-run: true`. For legacy callers, inspect every write path first; do not treat their dry run as read-only.
+7. Explain main staging and approved promotion for modern callers, or the exact label/input gate for a legacy caller.
 8. For monorepos, validate `packages` JSON and dependency order behavior.
 9. For Homebrew tap updates, wire `tap-repo` and `tap-formula` inputs plus `APP_ID`/`APP_PRIVATE_KEY` secrets.
 10. For Jamf uploads, wire `jamf-url` and Jamf secrets.
@@ -113,10 +137,9 @@ Complete release pipeline for Rust services: label check, AI version + release n
 | `binary-path` | string | No | `""` | Path to crate directory (e.g., `crates/client`) |
 | `crates` | string | No | `[]` | JSON array of crate paths to publish in dependency order |
 | `build-env` | string | No | `""` | Compile-time env vars (e.g., `BASE_URL=https://...`) |
-| `labels-to-check` | string | No | `["release", "prerelease"]` | PR labels that trigger releases |
 | `prerelease` | boolean | No | `false` | Force prerelease (adds `-rc.N` suffix) |
-| `release` | boolean | No | `false` | Force release (bypasses label check) |
-| `dry-run` | boolean | No | `false` | Test without actually publishing |
+| `release` | boolean | No | `false` | Request release; requires a successful checker |
+| `dry-run` | boolean | No | `false` | Disable crate publication; version, release, and Homebrew writes can remain |
 | `tap-repo` | string | No | `""` | Homebrew tap repository (e.g., `photon-hq/homebrew-photon`). Empty to skip. |
 | `tap-formula` | string | No | `""` | Formula name in tap (e.g., `jamf-package-updater`). Required if `tap-repo` is set. |
 
@@ -143,10 +166,9 @@ Complete release pipeline for a single TypeScript/JavaScript package: label chec
 | `no-npm-publish` | boolean | No | `false` | Skip npm publishing (GitHub Release only) |
 | `working-directory` | string | No | `.` | Directory containing `package.json` |
 | `build-command` | string | No | `bun run build` | Build command to run |
-| `labels-to-check` | string | No | `["release", "prerelease"]` | PR labels that trigger releases |
 | `prerelease` | boolean | No | `false` | Force prerelease |
-| `release` | boolean | No | `false` | Force release (bypasses label check) |
-| `dry-run` | boolean | No | `false` | Test without actually publishing |
+| `release` | boolean | No | `false` | Request release; requires a successful checker |
+| `dry-run` | boolean | No | `false` | Disable registry publication; version and release writes can remain |
 
 **Secrets:**
 
@@ -170,10 +192,9 @@ Complete release pipeline for TypeScript monorepos with independently-versioned 
 | `build-command` | string | No | `bun run build` | Per-package build command (ignored if `root-build-command` is set) |
 | `root-build-command` | string | No | `""` | Build once at repo root (e.g., `turbo build`) |
 | `include-dependents` | boolean | No | `false` | Also release downstream dependents |
-| `labels-to-check` | string | No | `["release", "prerelease"]` | PR labels that trigger releases |
 | `prerelease` | boolean | No | `false` | Force prerelease |
 | `release` | boolean | No | `false` | Force release |
-| `dry-run` | boolean | No | `false` | Test without actually publishing |
+| `dry-run` | boolean | No | `false` | Disable registry publication; version and release writes can remain |
 
 **Secrets:**
 
@@ -197,7 +218,6 @@ Complete release pipeline for Go binaries: label check, AI version + release not
 | `go-version` | string | No | `stable` | Go version to use |
 | `build-flags` | string | No | `""` | Additional `go build` flags |
 | `ldflags` | string | No | `-s -w` | Linker flags |
-| `labels-to-check` | string | No | `["release", "prerelease"]` | PR labels that trigger releases |
 | `prerelease` | boolean | No | `false` | Force prerelease |
 | `release` | boolean | No | `false` | Force release |
 | `tap-repo` | string | No | `""` | Homebrew tap repository. Empty to skip. |
@@ -291,25 +311,6 @@ Builds a macOS `.pkg` (with Swift binary) on every PR commit, posts/updates a si
 |---|---|---|
 | `SECRET_ENV_VARS` | No | Compile-time env vars written to `.env` |
 
-### dylib-release.yml
-
-Release pipeline for macOS dynamic libraries built from an Xcode workspace with CocoaPods. Label check, AI version + release notes, install CocoaPods, build dylib (arm64e), create GitHub Release with `.dylib` artifact.
-
-**Inputs:**
-
-| Input | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `workspace` | string | Yes | — | Path to `.xcworkspace` |
-| `scheme` | string | Yes | — | Xcode scheme to build |
-| `dylib-name` | string | Yes | — | Name of the output dylib (e.g., `BlueBubblesHelper`) |
-| `project-directory` | string | Yes | — | Directory containing the Podfile |
-
-**Secrets:**
-
-| Secret | Required | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | Yes | For AI-powered versioning and release notes |
-
 ### makefile-dylib-release.yml
 
 Release pipeline for macOS dynamic libraries built from a Makefile. Label check, AI version + release notes, `make release`, create GitHub Release with `.dylib` artifact.
@@ -335,7 +336,6 @@ Generic release pipeline for projects that only need AI-powered versioning and a
 | Input | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `service-name` | string | Yes | — | Display name for the service |
-| `labels-to-check` | string | No | `["release"]` | JSON array of PR labels to check |
 | `release` | boolean | No | `false` | Force release (overrides label) |
 
 **Secrets:**
@@ -413,9 +413,8 @@ For `typescript-monorepo-release`:
 
 ## Dylib Notes
 
-- `dylib-release.yml` is for projects using an Xcode workspace with CocoaPods. Builds arm64e dylib.
 - `makefile-dylib-release.yml` is for projects using a Makefile. Runs `make release` and embeds version.
-- Both create a GitHub Release with the `.dylib` as an artifact.
+- It creates a GitHub Release with the `.dylib` as an artifact. Xcode dylibs have no current reusable release workflow; review their caller's composition separately.
 
 ## README Check Guidance
 
@@ -450,10 +449,15 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 
 | Block | Path | Purpose |
 |---|---|---|
-| `check-pr-label` | `.github/blocks/check-pr-label/action.yaml` | Check PR labels to decide if release should trigger |
+| `check-pr-label` | `.github/blocks/check-pr-label/action.yaml` | Inspect configured PR labels; the caller decides policy |
 | `comment-on-pr` | `.github/blocks/comment-on-pr/action.yaml` | Post or update a single PR comment (idempotent via `comment-key`) |
 | `check-readme` | `.github/blocks/check-readme/action.yaml` | AI-powered README freshness check |
 | `check-skills` | `.github/blocks/check-skills/action.yaml` | AI-powered skills documentation freshness check |
+
+`check-pr-label` accepts only `labels`, a JSON array of arbitrary nonempty names. It returns a JSON string in `outputs.labels` mapping lowercase label names to booleans.
+It no longer accepts `default-on-push`. A push or manual run with no matching merged PR returns false for every requested label.
+An owning PR with none of the requested labels returns the same result. API errors and ambiguous merged-PR association fail without a label output.
+It lowercases names but does not alias `pre release` or `pre-release` to `prerelease`.
 
 ### Build Blocks
 
@@ -485,12 +489,14 @@ All blocks live under `.github/blocks/`. Workflows compose these internally — 
 
 If release did not run:
 
-- Confirm PR had expected label before merge.
+- For modern staging, confirm the main-branch run and its candidate, manifest, and provenance. Labels do not authorize it.
+- For promotion, confirm candidate verification, production dependency checks, and required reviewer approval.
+- For a legacy caller, confirm its exact label/input gate and that the checker succeeded.
 - Confirm workflow permissions include required scopes.
 - Confirm secrets exist at repository level.
 - Confirm caller workflow points to correct reusable workflow path.
 - For monorepos, confirm `packages` JSON is valid and paths exist.
-- For publish failures, test with `dry-run: true` and verify auth token scopes.
+- For modern build failures, use staging dry-run validation. Check registry permissions or trusted publishing for publication failures; dry runs do not test live publishing.
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
 - For Jamf uploads, confirm `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` are set and `jamf-url` is a valid Jamf Pro URL.
 - For dylib builds, confirm Xcode workspace/scheme or Makefile exists and produces expected output.
@@ -503,6 +509,6 @@ When generating BuildSpace setup instructions, respond with:
 2. **Copy-ready YAML** for caller workflow.
 3. **Secrets to add** (list exactly which ones and where to get them).
 4. **How to trigger and verify**.
-5. **First-run safe mode** (`dry-run`) recommendation.
+5. **First-run validation**: modern stage dry run, or an explicit write-risk assessment for legacy workflows.
 
 Keep recommendations concrete and default to the smallest working setup.
