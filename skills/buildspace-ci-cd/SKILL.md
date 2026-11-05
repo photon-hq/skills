@@ -178,6 +178,7 @@ Complete release pipeline for a single TypeScript/JavaScript package: label chec
 | `bun-version` | string | No | `latest` | Bun version to use |
 | `npm-tag` | string | No | `latest` | npm dist-tag (e.g., `latest`, `beta`, `next`) |
 | `no-npm-publish` | boolean | No | `false` | Disable npmjs publishing; GitHub Releases and opted-in GitHub Packages publishing remain |
+| `publish-github-packages` | boolean | No | `false` | Also publish to GitHub Packages; needs an owner-scoped package name and caller `packages: write` |
 | `use-oidc` | boolean | No | `false` | Prefer npm trusted publishing with caller `id-token: write`; token fallback can be needed if OIDC is unavailable or fails |
 | `working-directory` | string | No | `.` | Directory containing `package.json` |
 | `build-command` | string | No | `bun run build` | Build command to run |
@@ -204,6 +205,7 @@ Complete release pipeline for TypeScript monorepos with independently-versioned 
 | `packages` | string | Yes | — | JSON array: `[{"name":"pkg","path":"packages/pkg"}]` |
 | `bun-version` | string | No | `latest` | Bun version to use |
 | `npm-tag` | string | No | `latest` | npm dist-tag |
+| `publish-github-packages` | boolean | No | `false` | Also publish changed packages to GitHub Packages; needs owner-scoped package names and caller `packages: write` |
 | `build-command` | string | No | `bun run build` | Per-package build command (ignored if `root-build-command` is set) |
 | `root-build-command` | string | No | `""` | Build once at repo root (e.g., `turbo build`) |
 | `include-dependents` | boolean | No | `false` | Also release downstream dependents |
