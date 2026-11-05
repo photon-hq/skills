@@ -35,7 +35,8 @@ Use stage/promote for supported packages and Swift products:
 
 | Project type | Workflow pair | Trigger |
 |---|---|---|
-| Scoped npm package on GitHub Packages or npmjs | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
+| Owner-scoped npm package on GitHub Packages | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
+| Scoped or single unscoped public npmjs package | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
 | Swift executable packaged as macOS `.pkg` | `swift-stage.yml` + `swift-promote.yml` | Push to main stages; dispatch from main and approval promote |
 | SwiftPM library | `swift-stage.yml` + `swift-promote.yml`, both with `library: true` | Push to main stages; dispatch from main and approval promote |
 
@@ -43,22 +44,24 @@ Follow the [package guide](https://github.com/photon-hq/buildspace#package-stage
 or [Swift guide](https://github.com/photon-hq/buildspace#swift-stage-and-promote)
 for caller YAML, pack contracts, permissions, and approval settings. Neither pair uses release labels or requires an AI API key.
 
+For npmjs, set `registry: https://registry.npmjs.org` and the exact `package` name in both calls. An unscoped input selects only that package and rejects extra packed names; scoped inputs keep their scope's pack set. Unscoped support requires a reviewed BuildSpace commit containing [#148](https://github.com/photon-hq/buildspace/pull/148); merge that dependency before using it in a caller. GitHub Packages keeps repository-owner-scoped names and uses the automatic `GITHUB_TOKEN`. Public npmjs stage/promote uses trusted publishing and provenance, with no `NPM_TOKEN`; configure the package's trusted publishers for both caller workflow files and their environments as described in the package guide.
+
 The following release workflows remain for compatibility. Keep their gates until each caller has a supported replacement.
 Package stage/promote does not replace standalone Rust/Go binaries, crates.io publishing, or independent monorepo versioning.
 Swift stage/promote does not replace payload-only packages or Makefile dylibs. PR checks and previews run independently of release labels.
 
 | Project type | Workflow file | Trigger |
 |---|---|---|
-| Rust binary/library | `rust-service-release.yaml` | PR label `release` |
-| TypeScript/JavaScript single package | `typescript-service-release.yaml` | PR label `release` |
+| Rust binary/library | `rust-service-release.yaml` | PR label `release` or `release: true` |
+| TypeScript/JavaScript single package | `typescript-service-release.yaml` | PR label `release` or `release: true` |
 | TypeScript monorepo (multiple packages) | `typescript-monorepo-release.yaml` | PR label `release` or `prerelease`, or corresponding input |
-| Go binary | `go-service-release.yaml` | PR label `release` |
+| Go binary | `go-service-release.yaml` | PR label `release` or `release: true` |
 | Swift macOS `.pkg` (with compiled binary) | `swift-release.yml` | PR label `release` or `prerelease`, or corresponding input |
 | macOS `.pkg` without binary (payload/scripts only) | `pkg-release.yml` | PR label `release` |
 | macOS `.pkg` PR build (payload/scripts only) | `pkg-release-pr.yml` | Every PR commit |
 | Swift macOS `.pkg` PR build previews | `swift-pkg-pr.yml` | Every PR commit |
 | macOS dylib release (Makefile) | `makefile-dylib-release.yml` | PR label `release` |
-| Generic release (version + GitHub Release only) | `release.yaml` | PR label `release` |
+| Generic release (version + GitHub Release only) | `release.yaml` | PR label `release` or `release: true` |
 | README freshness check on PRs | `check-readme.yaml` | Every PR |
 | Skills documentation freshness check on PRs | `check-skills.yaml` | Every PR |
 
@@ -69,7 +72,7 @@ Always verify these before writing YAML:
 1. **Inputs**: service/package names, paths, build command, package lists, Homebrew tap info, Jamf config.
 2. **Secrets**:
    - Always required for AI features: `OPENAI_API_KEY`
-   - Legacy npm publishing: `NPM_TOKEN`; modern npmjs staging/promotion uses trusted publishing
+   - Legacy token-based npm publishing: `NPM_TOKEN`; single-package TypeScript can opt into `use-oidc: true`, and modern npmjs staging/promotion uses trusted publishing
    - crates publishing: `CARGO_REGISTRY_TOKEN`
    - Swift compile-time env vars: `SECRET_ENV_VARS`
    - Jamf upload: `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET`
@@ -80,6 +83,8 @@ Always verify these before writing YAML:
    - Release/version bump jobs need `contents: write`
    - Label checks need `pull-requests: read`
    - PR commenting needs `pull-requests: write`
+   - Public npmjs stage/promote callers need `id-token: write` on both calls
+   - GitHub Packages publication needs `packages: write`; follow the chosen workflow's read permissions for verification
 
 ## Release Trigger Rules (Important)
 
@@ -91,6 +96,8 @@ Use the default production environment approval path. The first publishing stagi
 ```bash
 script=$(gh api -H 'Accept: application/vnd.github.raw+json' 'repos/photon-hq/buildspace/contents/scripts/setup-release-environments.sh?ref=main') && bash -s -- photon-hq/your-repo <<<"$script"
 ```
+
+To pin an exact reviewed version, replace `main` with a commit SHA.
 
 Insert `--dry-run` before `photon-hq/your-repo` to preview API writes. The script configures main-only `staging` and `production`, with one to six required production reviewers from CODEOWNERS; append `@username @org/team` to select reviewers explicitly. Private repositories need [GitHub Enterprise for required reviewers](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments). A modern stage workflow's `dry-run: true` verifies and packs without publishing.
 
@@ -111,6 +118,7 @@ Legacy `dry-run` is not a pipeline-wide write prohibition. Version commits, GitH
 Remove obsolete release labels from migration PRs only after queued or active legacy publishing runs that could read them have finished and independent automation no longer needs them. Delete repository label definitions only after default-branch cutover, completed legacy runs, and verification of independent automation.
 Disable or update external producers that would recreate a retired label before deleting its definition. Label deletion does not require production promotion.
 Retain legacy secrets separately while active consumers or a documented rollback need them. Keep shared compatibility workflows until their callers migrate.
+A pinned legacy wrapper can still reference `check-pr-label@main` and other mutable blocks; inspect those transitive references before retiring shared code.
 Git tags, GitHub prerelease properties, and registry `staging`/`latest` tags are not obsolete PR labels.
 
 ## Implementation Procedure
@@ -169,7 +177,8 @@ Complete release pipeline for a single TypeScript/JavaScript package: label chec
 | `service-name` | string | Yes | — | Display name for the service |
 | `bun-version` | string | No | `latest` | Bun version to use |
 | `npm-tag` | string | No | `latest` | npm dist-tag (e.g., `latest`, `beta`, `next`) |
-| `no-npm-publish` | boolean | No | `false` | Skip npm publishing (GitHub Release only) |
+| `no-npm-publish` | boolean | No | `false` | Disable npmjs publishing; GitHub Releases and opted-in GitHub Packages publishing remain |
+| `use-oidc` | boolean | No | `false` | Prefer npm trusted publishing with caller `id-token: write`; token fallback can be needed if OIDC is unavailable or fails |
 | `working-directory` | string | No | `.` | Directory containing `package.json` |
 | `build-command` | string | No | `bun run build` | Build command to run |
 | `prerelease` | boolean | No | `false` | Force prerelease |
@@ -181,7 +190,7 @@ Complete release pipeline for a single TypeScript/JavaScript package: label chec
 | Secret | Required | Description |
 |---|---|---|
 | `OPENAI_API_KEY` | Yes | For AI-powered versioning and release notes |
-| `NPM_TOKEN` | No | npm auth token (required for publishing) |
+| `NPM_TOKEN` | No | Token-based npm publication or fallback; not needed when OIDC succeeds |
 
 ### typescript-monorepo-release.yaml
 
@@ -342,7 +351,7 @@ Generic release pipeline for projects that only need AI-powered versioning and a
 | Input | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `service-name` | string | Yes | — | Display name for the service |
-| `release` | boolean | No | `false` | Force release (overrides label) |
+| `release` | boolean | No | `false` | Request release; requires a successful checker |
 
 **Secrets:**
 
@@ -474,9 +483,7 @@ It lowercases names but does not alias `pre release` or `pre-release` to `prerel
 | `typescript-build` | `.github/blocks/typescript-build/action.yaml` | Build TypeScript project using Bun |
 | `swift-build` | `.github/blocks/swift-build/action.yml` | Build Swift binary (SPM, supports `.env` injection) |
 | `swift-pkg` | `.github/blocks/swift-pkg/action.yml` | Create macOS `.pkg` from binary and/or payload/scripts |
-| `build-dylib` | `.github/blocks/build-dylib/action.yml` | Build macOS dylib from Xcode workspace (arm64e) |
 | `build-makefile-dylib` | `.github/blocks/build-makefile-dylib/action.yml` | Build macOS dylib from Makefile |
-| `install-cocoapods` | `.github/blocks/install-cocoapods/action.yml` | Cache and install CocoaPods dependencies |
 
 ### Publish Blocks
 
@@ -505,7 +512,7 @@ If release did not run:
 - For modern build failures, use staging dry-run validation. Check registry permissions or trusted publishing for publication failures; dry runs do not test live publishing.
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
 - For Jamf uploads, confirm `JAMF_CLIENT_ID` + `JAMF_CLIENT_SECRET` are set and `jamf-url` is a valid Jamf Pro URL.
-- For dylib builds, confirm Xcode workspace/scheme or Makefile exists and produces expected output.
+- For Makefile dylib builds, confirm the Makefile exists and produces expected output; Xcode composition needs a separate review.
 
 ## Output Format for Agent Responses
 
