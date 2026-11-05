@@ -35,7 +35,7 @@ Use stage/promote for supported packages and Swift products:
 
 | Project type | Workflow pair | Trigger |
 |---|---|---|
-| npm package on GitHub Packages or npmjs | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
+| Scoped npm package on GitHub Packages or npmjs | `package-stage.yml` + `package-promote.yml` | Push to main stages; dispatch from main and approval promote |
 | Swift executable packaged as macOS `.pkg` | `swift-stage.yml` + `swift-promote.yml` | Push to main stages; dispatch from main and approval promote |
 | SwiftPM library | `swift-stage.yml` + `swift-promote.yml`, both with `library: true` | Push to main stages; dispatch from main and approval promote |
 
@@ -86,7 +86,13 @@ Always verify these before writing YAML:
 ### Stage and promote
 
 Merge to main to stage a build without a release label. Promotion verifies the stored candidate and publishes it without rebuilding.
-Use the default production environment approval path. Staging is created on the first staging run; environment setup is not a prerequisite for merging the caller. Before the first production promotion, have a repository administrator run the [README environment setup one-liner](https://github.com/photon-hq/buildspace#package-stage-and-promote) to configure main-only `staging` and `production` environments with at least one required production reviewer from CODEOWNERS or explicit arguments. A modern stage workflow's `dry-run: true` verifies and packs without publishing.
+Use the default production environment approval path. The first publishing staging run creates `staging`; environment setup is not a prerequisite for merging the caller. Before the first production promotion, follow the [environment setup instructions on BuildSpace main](https://github.com/photon-hq/buildspace/blob/main/README.md#package-stage-and-promote). With `gh`, `jq`, and a repository administrator's `gh auth login`, run this once per repository:
+
+```bash
+script=$(gh api -H 'Accept: application/vnd.github.raw+json' 'repos/photon-hq/buildspace/contents/scripts/setup-release-environments.sh?ref=main') && bash -s -- photon-hq/your-repo <<<"$script"
+```
+
+Insert `--dry-run` before `photon-hq/your-repo` to preview API writes. The script configures main-only `staging` and `production`, with one to six required production reviewers from CODEOWNERS; append `@username @org/team` to select reviewers explicitly. Private repositories need [GitHub Enterprise for required reviewers](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments). A modern stage workflow's `dry-run: true` verifies and packs without publishing.
 
 ### Legacy direct release
 
@@ -102,8 +108,8 @@ Legacy `dry-run` is not a pipeline-wide write prohibition. Version commits, GitH
 
 ### Label retirement
 
-Remove obsolete release labels from migration PRs. Delete repository label definitions only after default-branch cutover, completed legacy runs, and verification of independent automation.
-Check external label producers to prevent reattachment. Label deletion does not require production promotion.
+Remove obsolete release labels from migration PRs only after queued or active legacy publishing runs that could read them have finished and independent automation no longer needs them. Delete repository label definitions only after default-branch cutover, completed legacy runs, and verification of independent automation.
+Disable or update external producers that would recreate a retired label before deleting its definition. Label deletion does not require production promotion.
 Retain legacy secrets separately while active consumers or a documented rollback need them. Keep shared compatibility workflows until their callers migrate.
 Git tags, GitHub prerelease properties, and registry `staging`/`latest` tags are not obsolete PR labels.
 
@@ -492,9 +498,9 @@ If release did not run:
 - For modern staging, confirm the main-branch run and its candidate, manifest, and provenance. Labels do not authorize it.
 - For promotion, confirm candidate verification, production dependency checks, and required reviewer approval.
 - For a legacy caller, confirm its exact label/input gate and that the checker succeeded.
-- Confirm workflow permissions include required scopes.
-- Confirm secrets exist at repository level.
-- Confirm caller workflow points to correct reusable workflow path.
+- Check that workflow permissions include required scopes.
+- Verify secrets exist at repository level.
+- Confirm the caller points to the correct reusable workflow path.
 - For monorepos, confirm `packages` JSON is valid and paths exist.
 - For modern build failures, use staging dry-run validation. Check registry permissions or trusted publishing for publication failures; dry runs do not test live publishing.
 - For Homebrew tap updates, confirm `APP_ID` + `APP_PRIVATE_KEY` secrets are set and the GitHub App has push access to the tap repo.
