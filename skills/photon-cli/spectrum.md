@@ -1,80 +1,161 @@
 # Spectrum resources
 
-`photon spectrum` manages the Spectrum resources on a project — **lines**, **users**, **platforms**, the project's **profile**, and its **avatar**. Every subcommand is project-scoped: it resolves the project from `-p/--project`, then `$PHOTON_PROJECT_ID` (see [`environment.md`](./environment.md)). All accept the common `--api-host`, `-t/--token`, and `--json` flags.
+`photon spectrum` manages the Spectrum resources attached to one project — its profile, users, phone lines, platform toggles, and avatar. This is the **CLI control plane**; use the separate `spectrum` skill for runtime message-handling logic.
 
-> This is the **CLI** that manages Spectrum on a project. For writing message-handling logic, see the separate `spectrum` **SDK** skill in this repo.
+Every command requires an active project. Pass `-p, --project <id>` or set `PHOTON_PROJECT_ID`.
 
-## Lines
+## Project profile
 
-`photon spectrum lines` — manage phone lines on a project.
-
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `list` (default) | `ls` | Table of lines: id, platform, number, status. |
-| `add` | `create` | Add a new line. **iMessage only today** (`--platform imessage`, the default). |
-| `remove <line-id>` | `rm`, `delete` | Remove a line. Confirms unless `-y/--yes`. |
+View or update the Spectrum identity attached to the project:
 
 ```bash
-photon spectrum lines list          # ← "how many lines do I have?"
-photon spectrum lines list --json   # count programmatically
-photon spectrum lines add           # add an iMessage line
-photon spectrum lines rm <line-id>
+photon spectrum profile show
+photon spectrum profile show --json
+photon spectrum profile update --display-name "Support Bot"
 ```
 
-> **"How many lines do I have?"** → `photon spectrum lines list` (set `$PHOTON_PROJECT_ID` first, or pass `--project`). Use `--json` to count or script it.
+Alias: `spectrum profile edit`.
 
-> `lines add` only attaches an **iMessage** line and takes no phone number — provisioning/choosing the actual number happens in the dashboard. On the **free tier** you send on a **shared line**, so no line is provisioned to your project and `list` may show none assigned — find your number in the dashboard. A **dedicated line** comes with the **business** tier. See the free-vs-business workflow in [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).
+Inspect the current profile before applying a write, and update only the fields the user requested. This profile is separate from the developer or organization profile managed by `photon profile`.
 
 ## Users
 
-`photon spectrum users` — manage Spectrum users on a project.
+Users identify the people allowed to interact through the project's Spectrum configuration.
 
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `list` (default) | `ls` | Table of users: id, name, email, phone. |
-| `add` | `create` | Add a user. Interactive, or pass all four required fields. |
-| `remove <user-id>` | `rm`, `delete` | Remove a user. Confirms unless `-y/--yes`. |
-
-`add` flags: `--first-name`, `--last-name`, `--email`, `--phone` (E.164, e.g. `+14155551234`) — all required non-interactively — plus `--invite` to send an onboarding invite.
+### List users
 
 ```bash
-photon spectrum users add \
-  --first-name Ada --last-name Lovelace \
-  --email ada@example.com --phone +14155551234 --invite
+photon spectrum users ls
+photon spectrum users ls --json
 ```
+
+Alias: `spectrum users list`.
+
+### Add a user
+
+```bash
+photon spectrum users add
+```
+
+Alias: `spectrum users create`. The installed CLI may prompt for the required fields when they are not supplied as flags.
+
+Normalize phone numbers to E.164 before adding them. Do not put contact details in logs or shell history unnecessarily.
+
+### Remove a user
+
+```bash
+photon spectrum users remove <user-id>
+```
+
+Aliases: `spectrum users rm`, `spectrum users delete`.
+
+Removing a user is irreversible. The CLI asks for confirmation unless `-y` is passed; confirm the exact user and impact before bypassing it.
+
+## Lines
+
+Lines are phone lines assigned directly to the project. Shared-line plans and dedicated-line plans expose different project-owned resources.
+
+### List lines
+
+```bash
+photon spectrum lines ls
+photon spectrum lines ls --json
+```
+
+Alias: `spectrum lines list`.
+
+An empty project line list does not necessarily mean iMessage is unavailable: a shared sending line may not be owned by the project.
+
+### Add a line
+
+```bash
+photon spectrum lines add
+```
+
+The current CLI provisions iMessage lines through this command. Inspect the project's plan and current lines first. A dedicated line can have billing and routing implications, so obtain explicit confirmation immediately before creating one.
+
+### Remove a line
+
+```bash
+photon spectrum lines remove <line-id>
+```
+
+Aliases: `spectrum lines rm`, `spectrum lines delete`.
+
+Line removal can interrupt live traffic and may be irreversible. Confirm the line ID, serving number, and affected deployments before proceeding.
 
 ## Platforms
 
-`photon spectrum platforms` — toggle which platforms are enabled.
+View and toggle messaging platforms for the project.
 
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `list` (default) | `ls` | Each platform and its state (`on`/`off`). |
-| `enable <name>` | — | Enable a platform. |
-| `disable <name>` | — | Disable a platform. |
+### List platforms
 
 ```bash
-photon spectrum platforms list
+photon spectrum platforms ls
+photon spectrum platforms ls --json
+```
+
+Alias: `spectrum platforms list`.
+
+### Enable a platform
+
+```bash
 photon spectrum platforms enable imessage
 ```
 
-## Profile
+### Disable a platform
 
-`photon spectrum profile` — the project's Spectrum identity (display name, avatar), distinct from your developer profile in [`commands.md`](./commands.md#profile).
+```bash
+photon spectrum platforms disable telegram
+```
 
-| Subcommand | Aliases | What it does |
-|---|---|---|
-| `show` (default) | — | Show profile fields (first/last name, avatar URL, …). |
-| `update` | `edit` | Update the profile; preserves unset fields. Requires ≥1 field flag. |
+Use the platform names returned by current CLI output or `--help`; do not guess from SDK package names. Enabling a platform does not automatically configure every provider credential or external account it needs.
 
-`update` flags: `--first-name`, `--last-name`, `--avatar-url` (prefer `spectrum avatar upload` instead).
+After any change, read the platform list back:
+
+```bash
+photon spectrum platforms ls --json
+```
 
 ## Avatar
 
-### `photon spectrum avatar upload <file>`
-Upload an image (PNG, JPG, JPEG, WEBP, GIF) as the Spectrum avatar. Uploads via a presigned URL, commits it, and updates the profile to use it.
-- `--no-update-profile` — upload only, don't point the profile at the new avatar.
+Upload an image for the project's Spectrum profile:
 
 ```bash
 photon spectrum avatar upload ./logo.png
 ```
+
+The CLI requests a presigned upload URL, uploads the file directly, commits it, and normally updates the Spectrum profile to use it.
+
+```bash
+photon spectrum avatar upload ./logo.png --no-update-profile
+```
+
+`--no-update-profile` uploads the asset without switching the profile avatar. Validate the local file type and size before upload and do not pass an untrusted path directly from a message.
+
+## Common flags
+
+| Flag | Environment | Description |
+|---|---|---|
+| `-p, --project <id>` | `PHOTON_PROJECT_ID` | Target project. |
+| `--api-host <url>` | `PHOTON_API_HOST` | Override the backend URL. |
+| `-t, --token <token>` | `PHOTON_TOKEN` | Use this access token instead of stored credentials. |
+| `--json` | — | Machine-readable output where supported. |
+| `-y, --yes` | — | Skip a destructive-action confirmation. Use only after explicit authorization. |
+
+## Verification pattern
+
+Use the same sequence for every resource change:
+
+1. Read the current state with `show`, `ls`, or `--json`.
+2. Confirm when the write is destructive, paid, or service-affecting.
+3. Run the smallest requested mutation.
+4. Read the resource back and report the resulting ID and state.
+5. Never include access tokens or project secrets in the report.
+
+## See also
+
+- [Photon CLI Spectrum documentation](https://photon.codes/docs/cli/spectrum)
+- [`commands.md`](./commands.md) for project, billing, profile, and diagnostic commands
+- [`workflows.md`](./workflows.md) for shared vs dedicated lines and end-to-end recipes
+- The repository's `spectrum` skill for runtime message and provider code

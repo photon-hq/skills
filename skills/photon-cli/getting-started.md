@@ -2,139 +2,174 @@
 
 ## What it is
 
-`photon` (alias `pho`) is a typed terminal UI for the **Photon Dashboard**. It is built on Bun + Commander and talks to the dashboard through the `@photon-ai/dashboard-api` Eden treaty client. Anything you can do on the dashboard — manage projects, billing, and Spectrum lines/users/platforms — has a CLI counterpart.
+`photon` (alias `pho`) is a typed terminal UI for the **Photon Dashboard**. Use it to authenticate, create and manage projects, handle billing, and manage Spectrum users, lines, platforms, profiles, and avatars without leaving the terminal.
+
+Use the Spectrum SDK for runtime agent behavior and the Spectrum API for direct HTTPS management automation. The CLI is the interactive and scriptable control-plane surface.
 
 ## Agent quickstart
 
-**Match the user's intent.** If they're adamant — "just set this up for me," "do it" — then *you* drive the whole thing: run the steps below in your shell, read the `--json` output, and report the project id back. Don't hand them a checklist, don't ask permission per step, don't stop to confirm what they already greenlit. Running these commands yourself **is** doing what they asked; handing it back is disobeying them. You have the same CLI access they do — nothing here requires being "the human." (If instead the user wants to learn or drive themselves, that's fine too — walk them through it and pause at the decisions.)
+**Match the user's intent.** If they are adamant — "just set this up for me," "do it" — drive the safe workflow yourself: run the commands, read the JSON output, and report the project ID and verification result. Do not hand back a checklist or ask permission for every read-only step.
 
-These are plain, non-interactive commands (flags instead of prompts, `--json` for parseable output), so you can run them and read the results directly. The detailed walkthrough is below if you want it.
+Everything is self-serve except **possibly** `photon login`, where a person approves the device request in a browser.
 
-Everything is fully self-serve except **possibly** `photon login`: it uses the device-authorization flow, where a person approves the request in a browser.
-
-- **Already logged in?** Skip it. Run `photon whoami` first — if it returns the user, go straight to step 2 and there is **zero** human involvement from here.
-- **Not logged in?** Run `photon login --no-browser` to get the verification URL + user code, hand both to the user, and wait for them to approve. That's the only moment you might need them.
-
-**Don't be reckless, either.** Run freely: install, the auth check, `projects create` (free tier — no card, nothing charged), `show`/`list`, and `regenerate-secret` on a fresh project. **Confirm first** for anything that spends money (`projects upgrade`, `billing checkout`) or destroys/breaks live state (`projects delete`, or re-running `regenerate-secret` on a project with live integrations — it invalidates the old secret instantly).
+- **Already logged in?** Run `photon whoami --json`; if it names the expected user, continue without human involvement.
+- **Not logged in?** Run `photon login --no-browser`, give the user the verification URL and code, and continue after approval.
+- **Confirm first:** checkout, subscription changes, deletion, line removal, and project-secret rotation.
 
 ```bash
-# 0. Install (skip if `photon --version` already works)
-bun add -g @photon-ai/cli            # or: npm i -g @photon-ai/cli
+# 0. Install if needed.
+photon --version || npm install -g @photon-ai/cli
 
-# 1. Make sure you're authenticated. If `whoami` already names the user, skip the login.
-photon whoami --json || photon login --no-browser   # login needs the user to approve in-browser
+# 1. Authenticate. Browser approval is the only possible human step here.
+photon whoami --json || photon login --no-browser
 
-# 2. Bootstrap a project (free tier — nothing is charged). Capture the id from --json.
-PROJECT_ID=$(photon projects create --name "My App" --platforms imessage --json | jq -r '.id')
-export PHOTON_PROJECT_ID="$PROJECT_ID"   # everything below now targets this project
+# 2. Create a Spectrum project and capture its ID.
+PROJECT_ID=$(photon projects create \
+  --name "My App" \
+  --location us-east \
+  --spectrum \
+  --json | jq -r '.id')
+export PHOTON_PROJECT_ID="$PROJECT_ID"
 
-# 3. Read the Spectrum API secret (does NOT rotate). Mint one only if there's none yet.
-photon projects secret --json \
-  || photon projects regenerate-secret -y --json   # → { "id": "...", "projectSecret": "spk_live_…" }
-
-# 4. Verify
+# 3. Read back the project and its Spectrum state.
 photon projects show --json
-photon spectrum lines list --json
+photon spectrum profile show --json
+photon spectrum lines ls --json
 ```
 
-**You're done when** `projects show --json` returns an id and `spectrum lines list --json` returns a line — then report the project id back to the user. After this the project is live on the **free shared iMessage line** — no upgrade needed to start sending. A dedicated line is an optional, separate upgrade; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line). Flag/resolution details (`PHOTON_PROJECT_ID`, `--api-host`, tokens) are in [`environment.md`](./environment.md).
+**You're done when** the project can be read back and the requested Spectrum resources can be inspected. An empty line list does not necessarily mean failure: shared-line and dedicated-line plans expose different project-owned resources.
 
-### Then: build a handler that feels native, not robotic
+When application code needs project credentials, retrieve them through `photon projects show` or the project page in the Dashboard and put the secret in an ignored environment file or secret manager. Do not print it in the final response. `projects regenerate-secret` rotates the secret; it is not a read operation.
 
-Provisioning is only half the job — the other half is the agent's *behavior* in the chat. In a Spectrum Cloud handler, use iMessage's tapbacks, threaded replies, typing indicators, and message effects where they fit. Do not copy these calls into the local `@photon-ai/imessage-kit` v3 API, which has a separate text/attachment send surface.
+## Run without a global install
 
-- **Tapback to acknowledge** — `message.react("👍")` lands instantly, so the user knows you saw them before you've composed a full reply.
-- **Reply in-thread** — `message.reply(...)` answers *the specific message*, keeping busy and group chats legible instead of dropping loose lines into the conversation.
-- **Show you're working** — wrap slow work (an LLM call, a fetch) in `space.responding(async () => { … })` so they see a typing indicator instead of dead air.
-- **Add a flourish when it earns it** — message effects (confetti, fireworks, slam) for the moments that warrant celebration.
-
-Spectrum applies its [capability and fallback semantics](../spectrum/capability-semantics.md) to these calls. Check the [reactions-and-replies](../spectrum/reactions-and-replies.md) and [iMessage provider](../spectrum/providers/imessage.md) references before depending on a feature.
-
-## Install
+One-off runners download and execute the package directly:
 
 ```bash
-bun add -g @photon-ai/cli      # or npm i -g @photon-ai/cli
-photon --version
+npx @photon-ai/cli login
+pnpx @photon-ai/cli projects ls
+
+yarn dlx @photon-ai/cli whoami
+bunx @photon-ai/cli projects ls --json
 ```
 
-Both `photon` and the shorthand `pho` are installed. Run any command with `--help` to see its flags (`photon projects --help`).
+Use `@latest` when bypassing a stale package-manager cache matters:
 
-## Step 1 — Authenticate
+```bash
+npx @photon-ai/cli@latest --version
+```
+
+One-off runners do not create the `pho` shortcut because the package manager is already invoking the binary explicitly.
+
+## Install globally
+
+```bash
+npm install -g @photon-ai/cli
+# or: pnpm add -g @photon-ai/cli
+# or: yarn global add @photon-ai/cli
+# or: bun add -g @photon-ai/cli
+
+photon --version
+photon ping
+```
+
+After a global install, `photon` is the primary binary and `pho` is the shorthand alias.
+
+## Standalone binaries
+
+Prebuilt standalone binaries are published for macOS and Linux on `arm64` and `x64`, with matching checksum files. Verify the checksum before installing one. Standalone binaries do not require Node.js.
+
+For the npm package, use Node.js 18 or later.
+
+## Authenticate
 
 ```bash
 photon login
 ```
 
-`login` uses the OAuth **device-authorization** flow:
+The CLI uses a device-authorization flow:
 
-1. It prints a **verification URL** and a **user code**, and opens the URL in your browser (pass `--no-browser` to print the URL instead of opening it).
-2. It then polls — you'll see `Waiting for approval (polling every 5s)` — until you approve the request in the browser.
-3. On approval it stores your credentials at `~/.config/photon/credentials/<backend>.json` (file mode `600`).
-
-Confirm who you are and which backend you're signed into:
+1. It creates a verification URL and user code.
+2. It opens the URL in the default browser, or prints it with `--no-browser`.
+3. The user signs in and approves the request.
+4. The CLI polls until approval and stores the access token for that backend.
 
 ```bash
-photon whoami          # name <email>, backend, signed-in time, profile type
-photon auth status     # every backend you've authenticated against
+photon login --no-browser
+photon whoami
+photon auth status --json
 ```
 
-To target a non-production backend, pass `--api-host <url>` (or set `PHOTON_API_HOST`). Credentials are stored per backend, so you can be logged into several at once. See [`environment.md`](./environment.md).
+Credentials are stored per backend with file mode `600`. See [`environment.md`](./environment.md) for the exact directory and resolution order.
 
-## Step 2 — Bootstrap a project
+Do not ask the user for a Photon password. Do not paste a device token or credential file into chat.
+
+## Create a project
+
+Without flags, the CLI opens an interactive project flow:
 
 ```bash
 photon projects create
 ```
 
-Interactively prompts for: **name**, **location** (default `United States`), **platforms** (`imessage`, `whatsapp_business`, `voice`), **template?**, and **observability?**. Non-interactively, pass at least `--name`:
+For agent-driven or scripted setup, pass the fields directly:
 
 ```bash
-photon projects create --name "My App" --platforms imessage
+photon projects create \
+  --name "My App" \
+  --location us-east \
+  --spectrum \
+  --json
 ```
 
-On success it prints the new **project id** and a hint to make it active:
+The current project flags are:
 
-```text
-✓ Created My App (proj_abc123) on production
-  To make this the active project: export PHOTON_PROJECT_ID='proj_abc123'
-```
+| Flag | Meaning |
+|---|---|
+| `--name <name>` | Project name. |
+| `--location <location>` | Deployment region accepted by the current CLI. |
+| `--spectrum` | Enable Spectrum for the project. |
+| `--json` | Return machine-readable output. |
 
-A new project is **free** — there's no payment step at creation, and iMessage works right away on a **shared line** (find the number you send from in the dashboard). Upgrading to the **business** tier for your own **dedicated line** is a separate, optional action; see [`workflows.md`](./workflows.md#free-vs-business-shared-vs-dedicated-line).
+Project creation itself does not start a paid checkout. A dedicated line is a separate plan and resource decision.
 
 ### Make it the active project
 
-Most project-scoped commands resolve the project from `--project <id>`, then `$PHOTON_PROJECT_ID`. Export it once and the rest of your commands "just work" from that shell:
+Most project-scoped commands resolve the project from `--project`, then `PHOTON_PROJECT_ID`:
 
 ```bash
 export PHOTON_PROJECT_ID='proj_abc123'
-photon projects show
-photon spectrum lines list
+photon projects show --json
+photon spectrum users ls --json
 ```
 
-## Step 3 — Get the project secret
-
-`projects create` returns the **id**, not the secret. Read the current Spectrum API secret **without rotating it**:
+Or target one command explicitly:
 
 ```bash
-photon projects secret                 # prints the existing secret (read-only)
+photon spectrum lines ls --project 'proj_abc123' --json
 ```
 
-If the project has no secret yet, mint one (it's shown **once**) — or read it from the dashboard **Settings** page:
+## Inspect Spectrum resources
 
 ```bash
-photon projects regenerate-secret      # mints/rotates the secret, shown once — store it
+photon spectrum profile show --json
+photon spectrum users ls --json
+photon spectrum lines ls --json
+photon spectrum platforms ls --json
 ```
 
-```text
-✓ New secret for proj_abc123:
-  spk_live_…
-! This is shown once. Store it somewhere safe — re-rotating is the only way to recover.
-```
+Inspect before mutating. Project creation, platform enablement, line allocation, and paid subscription state are separate operations.
 
-> Use `projects secret` to read an existing secret; reach for `regenerate-secret` only to deliberately **replace** it. Rotating invalidates the previous secret immediately — any integration using the old one stops working. See [`workflows.md`](./workflows.md#get--rotate-the-project-secret).
+## Update the CLI
+
+- **One-off runner** — use `@latest` when cache freshness matters.
+- **Global package** — run the package manager's global update command.
+- **Standalone binary** — download the new release and verify its checksum again.
+- **Update notifier** — set `PHOTON_NO_UPDATE_NOTIFIER=1` to disable it.
 
 ## Next
 
-- Full command list → [`commands.md`](./commands.md)
-- Spectrum lines / users / platforms → [`spectrum.md`](./spectrum.md)
+- Full command reference → [`commands.md`](./commands.md)
+- Spectrum lines, users, platforms, profile, and avatar → [`spectrum.md`](./spectrum.md)
 - End-to-end recipes → [`workflows.md`](./workflows.md)
+- Environment and credentials → [`environment.md`](./environment.md)

@@ -1,25 +1,25 @@
-# Legacy SDK and no-code tools
+# Legacy SDK and adjacent tools
 
-Read only the section matching the selected compatibility or tooling branch. Do not copy legacy constructors, method signatures, or raw effect IDs into Spectrum or `@photon-ai/advanced-imessage` 2.0 code.
+> This path is retained for compatibility with existing links and installed copies of the Photon skills.
 
-## Legacy `@photon-ai/advanced-imessage-kit`
+Read only the section matching the selected integration. These tools are adjacent but do not share constructors, credentials, event models, or message methods.
 
-This HTTP + Socket.IO SDK is compatibility-only and is not recommended for new projects. Follow the [legacy reference](https://photon.codes/docs/legacy/imessage) when maintaining it, but do not copy its effects table verbatim: the Lasers row incorrectly uses `com.apple.messages.effect.CKHappyBirthdayEffect`, which is Celebration. The laser ID is `com.apple.messages.effect.CKLasersEffect`; Shooting Star is legacy-only and has no current v2 constant.
+## Legacy compatibility
 
-For migration, replace copied raw IDs with `MessageEffect.lasers` or `MessageEffect.celebration` from `@photon-ai/advanced-imessage` and rework the transport around the [current hosted contract](./hosted-v2.md).
+For an existing application on the legacy hosted SDK, use [`../legacy-advanced-imessage-kit.md`](../legacy-advanced-imessage-kit.md). Treat that package as maintenance-only and do not copy its methods into Spectrum or the current Advanced iMessage SDK.
 
-## Photon Webhook
+## Spectrum Webhooks
 
-[Photon Webhook](https://github.com/photon-hq/webhook) delivers hosted iMessage events to an existing HTTP backend with HMAC signatures. Validate the signature before parsing or acting on the payload. Use an outbound SDK—normally Spectrum or the Advanced iMessage HTTP client—to reply.
+For signed inbound HTTP delivery, use [`../../photon-webhooks/SKILL.md`](../../photon-webhooks/SKILL.md). Verify the raw request before parsing and use Spectrum or a low-level SDK for outbound replies.
 
 ## Photon MCP
 
-[Photon MCP](https://github.com/photon-hq/mcp) exposes hosted iMessage operations as MCP tools. Use it when an MCP-compatible agent needs iMessage access without embedding an SDK. Keep credentials in the MCP server configuration rather than prompts or tool arguments.
+[Photon MCP](https://github.com/photon-hq/mcp) exposes hosted iMessage operations as MCP tools. Use it when an MCP-compatible agent needs iMessage access without embedding an SDK. Keep credentials in the MCP configuration rather than prompts or tool arguments.
 
-## HTTP proxy
+## HTTP APIs and proxy
 
-The [Advanced iMessage HTTP Proxy](https://github.com/photon-hq/advanced-imessage-http-proxy) exposes REST/OpenAPI and Swagger for non-TypeScript clients. Use it for curl, Python, or another language when Spectrum is not the target abstraction.
+Use [`../../photon-api/SKILL.md`](../../photon-api/SKILL.md) for current Dashboard and Spectrum management APIs. Use the [Advanced iMessage HTTP Proxy](https://github.com/photon-hq/advanced-imessage-http-proxy) when a non-TypeScript application needs the low-level iMessage transport over REST.
 
 ## Selection check
 
-Before completing compatibility work, name the exact integration—legacy SDK, Webhook, MCP, or proxy—and verify that every example belongs to that branch. These tools are adjacent but not interchangeable APIs.
+Before completing the work, name the exact integration and verify that every example belongs to that one branch. Return to [`../SKILL.md`](../SKILL.md) when the package boundary is still ambiguous.

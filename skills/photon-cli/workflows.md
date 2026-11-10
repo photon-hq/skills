@@ -1,96 +1,186 @@
 # Workflows
 
-End-to-end recipes that combine the commands. For per-command detail see [`commands.md`](./commands.md) and [`spectrum.md`](./spectrum.md); for env vars see [`environment.md`](./environment.md).
+End-to-end recipes that combine the commands. For per-command detail see [`commands.md`](./commands.md) and [`spectrum.md`](./spectrum.md); for environment variables and resolution rules see [`environment.md`](./environment.md).
+
+Every workflow ends with a non-destructive verification. Do not rotate credentials, delete resources, remove lines, change a subscription, or open checkout without the user's explicit authorization.
 
 ## Authenticate + bootstrap a project
 
 The standard "from zero" sequence:
 
 ```bash
-photon login                          # opens browser, waits for approval
-photon whoami                         # confirm you're signed in
+photon --version || npm install -g @photon-ai/cli
 
-photon projects create --name "My App" --platforms imessage
-# → ✓ Created My App (proj_abc123) on production
+photon whoami --json || photon login --no-browser
+# Login may require the user to approve the browser request.
 
-export PHOTON_PROJECT_ID='proj_abc123'   # make it the active project
-photon projects show                  # everything below now uses this project
+PROJECT_ID=$(photon projects create \
+  --name "My App" \
+  --location us-east \
+  --spectrum \
+  --json | jq -r '.id')
+
+export PHOTON_PROJECT_ID="$PROJECT_ID"
+photon projects show --json
+photon spectrum profile show --json
 ```
 
-A freshly created project is **free**. Nothing is charged at creation.
+A newly created project starts on the free path; project creation itself does not open checkout. It also does not guarantee that a dedicated iMessage line is assigned. Inspect plan and resource state separately.
 
-## Get / rotate the project secret
+## Inspect a project before changing it
 
-`projects create` returns the **id**, never the secret. Read the existing Spectrum API secret **without rotating it**:
+Read the current state first:
 
 ```bash
-photon projects secret                     # or: get-secret — prints the existing secret
-photon projects secret --json              # → { "id": "...", "projectSecret": "spk_live_…" }
+photon projects show --json
+photon spectrum profile show --json
+photon spectrum users ls --json
+photon spectrum lines ls --json
+photon spectrum platforms ls --json
+photon billing show --json
 ```
 
-You can also read it from the project's **Settings** page in the dashboard.
+Use that inventory to decide whether the requested write is needed. A shared-line project may not show a project-owned line, so an empty `lines ls` result does not by itself mean project creation failed.
 
-**Rotate** only when you intend to replace the secret everywhere (printed **once**):
+## Retrieve or rotate project credentials
+
+Retrieve the project's current Spectrum credentials through `photon projects show` or the project's Dashboard page. Store the secret in an ignored environment file or secret manager and never print it in the final response.
+
+`projects regenerate-secret` is not a read operation. It replaces the project secret and invalidates the previous value immediately:
 
 ```bash
-photon projects regenerate-secret          # or: rotate-secret
-# ✓ New secret for proj_abc123:
-#   spk_live_…
-# ! This is shown once. Store it somewhere safe — re-rotating is the only way to recover.
+# Run only after explicit confirmation and a rollout plan.
+photon projects regenerate-secret <project-id>
 ```
 
-> Rotating **immediately invalidates** the previous secret — any integration still using the old one breaks. Prefer `projects secret` to read; only `regenerate-secret` when replacing. Add `--json` to capture `{ id, projectSecret }` programmatically.
+A safe rotation procedure is:
 
-## Free vs. business (shared vs. dedicated line)
+1. Confirm that the user intends to invalidate the current credential.
+2. Inventory every deployment and secret store that uses it.
+3. Prepare the rollout and rollback path.
+4. Run `photon projects regenerate-secret <project-id>`.
+5. Capture the new value without logging it.
+6. Update every secret store and redeploy.
+7. Verify each integration with a read-only SDK or API operation.
 
-A project is **free by default** — you get it the moment you run `projects create`. **iMessage works on both tiers** — the free tier is not a trial or a locked state. The difference is *which* line your messages go out on:
+Do not rotate merely because an agent needs to discover the current secret.
 
-- **Free** — you send on a **shared line** pooled across free projects. Because the line isn't dedicated to your project, nothing is provisioned *to* you, so `spectrum lines add` / `list` won't show a line assigned to your project. To see the number you're actually sending from, check the **dashboard**. Staying on the free tier is perfectly fine — upgrade only when you want a line of your own.
-- **Business (dedicated line)** — upgrade to the **business** tier to get your **own dedicated line** instead of the shared pool, then confirm the number in the dashboard:
+## Free vs business: shared vs dedicated lines
+
+A project can use iMessage on the free shared path or upgrade for a project-owned dedicated line.
+
+- **Shared line** — the sending line comes from a shared pool and may not appear as a line owned by the project. Recipients and proactive messaging can have additional restrictions.
+- **Dedicated line** — a Business project owns its line and can use dedicated-line features such as cloud group creation and stable per-project routing.
+
+Inspect the current subscription before proposing an upgrade:
 
 ```bash
-photon projects upgrade business      # smart-routes to Stripe checkout (or the portal if already subscribed)
-# equivalently, the explicit form:
-photon billing checkout business
+photon billing plans
+photon billing show --json
 ```
 
-`projects upgrade` inspects the current subscription and opens Stripe **checkout** for an unsubscribed project or the **portal** for an already-subscribed one. Force either with `--checkout` / `--manage`. Tiers: `pro`, `business`, `enterprise`.
-
-After upgrading, attach the iMessage line and verify it in the dashboard (the CLI adds the line; the dashboard surfaces the assigned number):
+After the user confirms the exact tier, quantity, and paid action, create the Checkout or Portal URL:
 
 ```bash
-photon spectrum lines add             # iMessage line
-photon spectrum lines list            # confirm
+photon projects upgrade business --qty 1 --no-browser --json
+# or use the explicit billing command:
+photon billing checkout business --qty 1 --no-browser --json
 ```
 
-## Add an iMessage line
+`projects upgrade` routes an unsubscribed project to Checkout and an existing subscription to the Stripe Portal unless a flow is forced. Downgrades, cancellation, payment-method changes, and other subscription management happen through the Portal.
+
+Creating a URL does not prove the user completed the billing action. After they finish Checkout or the Portal flow, read the authoritative state back before reporting success:
 
 ```bash
-export PHOTON_PROJECT_ID='proj_abc123'
-photon spectrum lines add             # --platform imessage is the default (and only option today)
-photon spectrum lines list            # id, platform, number, status
+photon billing show --json
+photon spectrum lines ls --json
 ```
 
-## Inspect an existing project
+Report the returned subscription status and line state. Do not claim that the tier changed merely because the CLI returned an `action` and `url`.
 
-Point the CLI at a project and read its state:
+## Add or inspect an iMessage line
+
+Inspect before writing:
 
 ```bash
-export PHOTON_PROJECT_ID='proj_abc123'
-photon projects show                  # status, location, owner, flags, timestamps
-photon spectrum lines list            # how many lines / their numbers + status
-photon spectrum platforms list        # which platforms are on
-photon billing show                   # current tier + subscription status
+photon spectrum lines ls --json
 ```
 
-## Work against a different backend (multi-backend)
-
-Credentials are stored per backend, so you can hold several sessions at once:
+After the user has the correct plan and explicitly requests a line:
 
 ```bash
-photon login --api-host https://staging.example.com
-photon projects ls --api-host https://staging.example.com
-photon auth status                    # lists every backend, marks the active one ●
+photon spectrum lines add
+photon spectrum lines ls --json
 ```
 
-Or set it for the whole shell: `export PHOTON_API_HOST=https://staging.example.com`. See [`environment.md`](./environment.md) for the full resolution order.
+Removing a line is destructive and can break active traffic. Confirm the exact line ID and impact before running `photon spectrum lines remove <line-id>`.
+
+## Enable a platform
+
+```bash
+photon spectrum platforms ls --json
+photon spectrum platforms enable imessage
+photon spectrum platforms ls --json
+```
+
+Use the same inspect → change → verify sequence for other supported platforms. Do not assume a platform being enabled also provisions its external credentials or resources.
+
+## CI authentication
+
+Use a token and project ID from the CI platform's secret and variable stores:
+
+```bash
+PHOTON_TOKEN="$PHOTON_TOKEN" \
+PHOTON_PROJECT_ID="$PHOTON_PROJECT_ID" \
+photon projects show --json
+```
+
+Then run the minimum read-only verification required by the workflow. The device-flow token currently has a default seven-day lifetime, so CI needs a reauthentication path when it expires.
+
+Never print the token, project secret, or credentials file in CI logs or artifacts.
+
+## Work against a different backend
+
+Credentials are stored per backend, so several sessions can coexist:
+
+```bash
+photon login \
+  --api-host https://staging-app.photon.codes \
+  --no-browser
+
+photon projects ls \
+  --api-host https://staging-app.photon.codes \
+  --json
+
+photon auth status --json
+```
+
+Or set the backend for the shell:
+
+```bash
+export PHOTON_API_HOST=https://staging-app.photon.codes
+photon env current
+photon whoami
+```
+
+When authentication unexpectedly fails, verify that `login`, `whoami`, and the target command all resolve to the same backend before replacing credentials.
+
+## Troubleshoot unauthorized or project-not-found
+
+Check the state in this order:
+
+1. Run `photon env current`.
+2. Run `photon whoami` against the same backend.
+3. Check the `--project` argument and `PHOTON_PROJECT_ID` precedence.
+4. Inspect `photon config show --json`; it does not print secrets.
+5. Verify project membership with `photon projects ls --json`.
+6. Reauthenticate only when the session is expired or revoked.
+
+Do not create a replacement project until the backend, identity, and project mismatch is understood.
+
+## See also
+
+- [Photon CLI authentication](https://photon.codes/docs/cli/authentication)
+- [Photon CLI projects](https://photon.codes/docs/cli/projects)
+- [Photon CLI Spectrum resources](https://photon.codes/docs/cli/spectrum)
+- [Photon CLI billing](https://photon.codes/docs/cli/billing)
