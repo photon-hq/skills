@@ -1,7 +1,7 @@
 # Skills
 
 [![skills.sh](https://img.shields.io/badge/skills.sh-photon--hq%2Fskills-blue)](https://skills.sh/photon-hq/skills)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](./LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/photon-hq/skills)](https://github.com/photon-hq/skills)
 
 Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs, following the [Agent Skills](https://skills.sh/) format.
@@ -111,4 +111,4 @@ Skills are automatically picked up by supported agents once installed — Cursor
 
 ## License
 
-MIT
+Apache-2.0
