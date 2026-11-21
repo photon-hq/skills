@@ -4,7 +4,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](./LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/photon-hq/skills)](https://github.com/photon-hq/skills)
 
-Agent skills for [Photon](https://photon.codes/spectrum)'s SDKs, following the [Agent Skills](https://skills.sh/) format.
+Agent skills that teach coding agents how to connect an AI agent to iMessage and WhatsApp Business with [Photon](https://photon.codes)'s SDKs and CLI, following the [Agent Skills](https://skills.sh/) format.
 
 ```bash
 npx skills add photon-hq/skills --skill <skill-name>
