@@ -5,7 +5,9 @@ Part of the Photon 2.0 skill. The overview of every channel, with plans and what
 [Build an email agent](https://photon.codes/docs/beta/get-started/email.md),
 [Email content and sending limits](https://photon.codes/docs/beta/messaging/email.md)
 
-- Connect a domain: dashboard **Email** page, `photon project platform email connect <domain>`, or the API.
+- Connect a domain: dashboard **Email** page, `photon project platform email connect <domain> --no-wait --json`,
+  or the API. Without `--no-wait` the command waits for DNS verification, which can't happen until the
+  records are published: read them from `operation.detail.dnsRecords`, publish them, then check the status.
   Use an unused subdomain such as `mail.example.com`: changing the receiving MX of a working domain moves
   its mail. Free allows one domain per project, Pro five.
 - Publish every record Photon shows: DKIM CNAMEs, bounce MX and SPF TXT (sending), and the receiving MX

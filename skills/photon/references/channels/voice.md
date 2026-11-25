@@ -9,7 +9,9 @@ Part of the Photon 2.0 skill. The overview of every channel, with plans and what
   doesn't go through the messaging API.
 - Eligible numbers: a Photon SMS number or a dedicated iMessage or WhatsApp number. Shared lines can't take
   calls.
-- Routing uses Voice profiles: a project default plus optional additional profiles. Check with
+- Routing uses Voice profiles: a project default plus optional additional profiles. Before editing any
+  profile, check which one the line uses with `photon project platform voice assignment view <line-id>`, and
+  edit that one. Check the default with
   `photon project platform voice profile view default`; if the project has no default yet, create it with
   `photon project platform voice profile create --default` (ask first), and keep an existing one. Then set
   the inbound SIP destination with

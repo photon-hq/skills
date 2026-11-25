@@ -131,7 +131,8 @@ photon project platform operation cancel <pho_opr_...> --yes
   wait; `photon operation replay <local-id>` resumes it without buying again.
 - `telegram connect` and `whatsapp-business number add` without `--waba-id` hand off to a person in Telegram
   or the dashboard. Without `--no-wait`, `telegram connect` waits for the bot and prints its link only on
-  stderr, so pass `--no-wait` and send `operation.detail.setupUrl` to the user. Check progress with
+  stderr. The setup link is a secret, so the person runs `telegram connect` themselves (or uses the
+  dashboard); the agent only checks progress. Check progress with
   `photon project platform telegram list`, which shows connected bots and pending setups. Run `connect`
   again only while the setup is pending, to pick it back up. With a bot already connected, `connect` asks
   first (or exits 2 with `CONFIRMATION_REQUIRED` without `--yes`) and then fails with
@@ -197,6 +198,9 @@ photon operation list --json          # unresolved local operations
 photon operation view <local-id>
 photon operation replay <local-id>    # finish or re-read the same operation
 ```
+
+A replay of an operation that produces a secret (API key, webhook or voice `create`/`rotate`) prints it
+again, so the person runs that replay too.
 
 With `PHOTON_API_TOKEN` there is no journal, and a key the CLI generates can't be matched later. Pass your own
 `--idempotency-key` on every write that takes one, keep it until the result is known, and repeat a failed write

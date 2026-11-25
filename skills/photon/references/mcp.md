@@ -84,6 +84,7 @@ https://github.com/photon-hq/mcp-server.
    }
    ```
 
+   Restrict the file to its owner (`chmod 600 <file>`) or use the client's secret storage if it has one.
    Edit the file rather than passing the key on a command line (`claude mcp add --env ...`): a command's
    arguments land in shell history and can be read by other processes on the machine.
 

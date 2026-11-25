@@ -13,7 +13,8 @@ Part of the Photon 2.0 skill. The overview of every channel, with plans and what
   who has messaged it since their assignment. The assignment's `optIn.state` is `pending` until they text,
   then `received`. An assignment uses plan capacity, so ask first.
   - Dashboard: project **iMessage** page, add the sender's identity, then assign from the shared pool.
-  - CLI: `photon project platform imessage assignment create --phone-number <E.164> --project <pho_prj_...>`.
+  - CLI, for a phone number: `photon project platform imessage assignment create --phone-number <E.164> --project <pho_prj_...>`.
+    For an iMessage email, use the dashboard's iMessage page instead.
   - API: `photon.projects.platforms.imessage.assignments.create` with `body: { handle }` (needs
     `platforms:write`). The response's `assignedPhoneNumber` is the agent's number.
 - **Dedicated line** (Business, $250 per line per month, 50 per project): `photon project platform imessage
