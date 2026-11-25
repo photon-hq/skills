@@ -31,7 +31,7 @@ Sources: [Convex](https://photon.codes/docs/beta/integrations/convex.md#turns),
 Ask the user first: creating a destination is a change, and it returns a signing secret once.
 
 - Dashboard: project **Webhooks** page, **Add a destination**: HTTPS URL, payload API version, events.
-- CLI: `photon project webhook create --name <name> --url https://... --api-version 2026-07-01 --event message.received --project <pho_prj_...>`
+- CLI, run by the person since it prints the secret: `photon project webhook create --name <name> --url https://... --api-version 2026-07-01 --event message.received --project <pho_prj_...>`
   ([cli.md](cli.md#webhooks)).
 - API: [Create webhook destination](https://photon.codes/docs/beta/api-client/sdk/projects/create-webhook-destination.md)
   with an `Idempotency-Key`; `enabledEvents: ["*"]` subscribes to everything, `[]` to nothing.

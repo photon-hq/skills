@@ -86,7 +86,7 @@ Goal: the user is signed in to Photon CLI 3.x and the hosted MCP server, and see
 Present a short plan once, get one yes, then run every step without asking again.
 
 1. **Look first.** These checks are read-only.
-   - `photon --version`: 3.x is ready. 2.x is Photon CLI 1.0, and installing 3.x with the same package
+   - `photon --version`: 3.x is ready. Anything up to 2.3.0 is Photon CLI 1.0, and installing 3.x with the same package
      manager replaces it ([Migrate from 1.0](https://photon.codes/docs/beta/cli/migrate-from-1.md)); say so
      in the plan. If the user wants to keep 1.0, skip the install and write `npx -y @photon-ai/cli@latest`
      wherever a step below says `photon`.

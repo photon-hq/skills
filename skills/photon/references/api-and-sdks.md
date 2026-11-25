@@ -290,10 +290,13 @@ do {
 ## Raw HTTP
 
 ```sh
-curl https://api.photon.codes/v1/account \
+curl https://api.photon.codes/v1/projects/$PHOTON_PROJECT_ID \
   -H "Authorization: Bearer $PHOTON_API_KEY" \
   -H "Photon-Version: 2026-07-01"
 ```
+
+A project key (`pho_sk_...`) works only under `/v1/projects/{projectId}`; account routes such as
+`/v1/account` need an account service key or an OAuth token.
 
 Timestamps are RFC 3339 in UTC (`2026-01-01T00:00:00Z`). The OpenAPI schema is at
 https://api.photon.codes/openapi.json.

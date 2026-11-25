@@ -15,4 +15,7 @@ Part of the Photon 2.0 skill. The overview of every channel, with plans and what
   the inbound SIP destination with
   `photon project platform voice profile inbound set <profile-id|default> --sip-uri <uri>` (`sips:` selects
   TLS). Editing a profile affects new calls on every line that uses it: ask first.
+- Outbound calling: `photon project platform voice profile outbound enable` and `outbound rotate` print the
+  SIP password once. The person runs them or uses the dashboard and puts the password in their voice
+  provider; don't run them yourself or copy the password into chat or files.
 - A saved destination doesn't prove a working call: verify audio both ways with a real call.

@@ -133,12 +133,15 @@ photon project platform operation cancel <pho_opr_...> --yes
   or the dashboard. Without `--no-wait`, `telegram connect` waits for the bot and prints its link only on
   stderr, so pass `--no-wait` and send `operation.detail.setupUrl` to the user. Check progress with
   `photon project platform telegram list`, which shows connected bots and pending setups. Run `connect`
-  again only while the setup is pending, to pick it back up: once a bot is connected, `connect` tries to
-  add another. Treat that link as a secret: whoever opens it can connect a bot to the project. For
+  again only while the setup is pending, to pick it back up. With a bot already connected, `connect` asks
+  first (or exits 2 with `CONFIRMATION_REQUIRED` without `--yes`) and then fails with
+  `409 TELEGRAM_BOT_ALREADY_CONNECTED`: one bot per project, so the old bot has to be disconnected first,
+  after the user says yes. Treat that link as a secret: whoever opens it can connect a bot to the project. For
   WhatsApp, pass `handoff.url` to the user.
 - Voice routing lives under `photon project platform voice profile ...` (`create --default`,
   `inbound set <profile-id|default> --sip-uri <uri>`, `outbound enable|rotate|revoke`) and
-  `voice assignment set|clear`. Read `--help` for each before use; see [channels/voice.md](channels/voice.md).
+  `voice assignment set|clear`. `outbound enable` and `outbound rotate` print the SIP `password` once on
+  stdout: like key creation, the person runs them (or the dashboard), not the agent. Read `--help` for each before use; see [channels/voice.md](channels/voice.md).
 
 ### API keys
 
@@ -164,11 +167,15 @@ photon project webhook api-version list --project <pho_prj_...>
 photon project webhook event-type list --api-version 2026-07-01 --project <pho_prj_...>
 photon project webhook list --project <pho_prj_...> --json
 photon project webhook create --name <name> --url https://... --api-version 2026-07-01 \
-  --event message.received [--idempotency-key <key>] --project <pho_prj_...>   # prints signingSecret once
+  --event message.received [--idempotency-key <key>] --project <pho_prj_...>   # person runs it; secret printed once
 photon project webhook edit <pho_whd_...> --status disabled --project <pho_prj_...>
-photon project webhook rotate-secret <pho_whd_...> [--overlap-seconds 86400] --yes --project <pho_prj_...>
+photon project webhook rotate-secret <pho_whd_...> [--overlap-seconds 86400] --yes --project <pho_prj_...>  # person runs it
 photon project webhook delete <pho_whd_...> --yes --project <pho_prj_...>
 ```
+
+`create` and `rotate-secret` print the `whsec_...` signing secret once on stdout, so an agent running them
+would put it in its own transcript. Hand both to the person (or the dashboard's **Webhooks** page) and have
+them store the secret in the server's secret manager; the agent can run `list`, `edit` and `delete`.
 
 A destination's API version is fixed; to upgrade, run a second destination on the new version, verify it,
 then delete the old one. `edit --event` replaces the whole subscription.
