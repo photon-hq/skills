@@ -131,8 +131,10 @@ photon project platform operation cancel <pho_opr_...> --yes
   wait; `photon operation replay <local-id>` resumes it without buying again.
 - `telegram connect` and `whatsapp-business number add` without `--waba-id` hand off to a person in Telegram
   or the dashboard. Without `--no-wait`, `telegram connect` waits for the bot and prints its link only on
-  stderr, so pass `--no-wait` and send `operation.detail.setupUrl` to the user; run `connect` again to pick
-  the setup back up. Treat that link as a secret: whoever opens it can connect a bot to the project. For
+  stderr, so pass `--no-wait` and send `operation.detail.setupUrl` to the user. Check progress with
+  `photon project platform telegram list`, which shows connected bots and pending setups. Run `connect`
+  again only while the setup is pending, to pick it back up: once a bot is connected, `connect` tries to
+  add another. Treat that link as a secret: whoever opens it can connect a bot to the project. For
   WhatsApp, pass `handoff.url` to the user.
 - Voice routing lives under `photon project platform voice profile ...` (`create --default`,
   `inbound set <profile-id|default> --sip-uri <uri>`, `outbound enable|rotate|revoke`) and

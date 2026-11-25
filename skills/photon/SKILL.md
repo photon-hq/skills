@@ -91,9 +91,11 @@ Present a short plan once, get one yes, then run every step without asking again
      wherever a step below says `photon`.
    - `node --version`: the npm package needs Node.js 22 or newer; without it, plan the standalone binary
      ([Installation](https://photon.codes/docs/beta/cli/installation.md)). To keep 1.0 as well, install the
-     binary into its own folder and leave `PATH` alone:
+     binary into its own folder and leave `PATH` alone. macOS and Linux:
      `curl -fsSL https://github.com/photon-hq/cli/releases/latest/download/install.sh | PHOTON_BIN_DIR="$HOME/.photon-cli-3/bin" PHOTON_NO_MODIFY_PATH=1 sh`,
-     then write `~/.photon-cli-3/bin/photon` wherever a step below says `photon`.
+     then write `~/.photon-cli-3/bin/photon` wherever a step below says `photon`. Windows (PowerShell):
+     `$env:PHOTON_BIN_DIR = "$HOME\.photon-cli-3\bin"; $env:PHOTON_NO_MODIFY_PATH = '1'; irm https://github.com/photon-hq/cli/releases/latest/download/install.ps1 | iex`,
+     then write `& "$HOME\.photon-cli-3\bin\photon.exe"` wherever a step below says `photon`.
    - Whether your client already has a `photon` MCP server, and whether `PHOTON_API_TOKEN` is set (then the
      CLI uses that key and `photon login` refuses).
 2. **Show the plan** in one message, adapted to what you found:
@@ -185,7 +187,8 @@ Project API key permissions: `project:read`, `project:write`, `platforms:read`, 
 | `ORGANIZATION_NOT_SELECTED` (exit 2) | Several organizations | `photon org list --json`, then pass `--org` |
 | `NOT_AUTHENTICATED`, `AUTH_SESSION_EXPIRED` (exit 4) | Sign-in needed | `photon login` |
 | `AUTH_ENVIRONMENT_KEY_SET` (exit 2) | `PHOTON_API_TOKEN` is set | Unset it to sign in as the user |
-| `LEGACY_COMMAND`, `LEGACY_TOKEN` (exit 2) | A 1.0 command or credential | It is 1.0 work; see skill-legacy |
+| `LEGACY_COMMAND` (exit 2) | A 1.0 command | It is 1.0 work; see skill-legacy |
+| `LEGACY_TOKEN` (exit 2) | 1.0's `PHOTON_TOKEN` or `DASHBOARD_TOKEN` is set | For 2.0, unset it in the shell that runs `photon`; leave the user's 1.0 setup alone |
 | HTTP 401 or 403 | Expired key, wrong key kind, permission or project | Check the key's project and permissions |
 | `409 PROJECT_INITIALIZING` | New project still setting up | Wait for `Retry-After`, then retry |
 | `400 INVALID_API_VERSION` | Missing or wrong `Photon-Version` | Send `2026-07-01` |

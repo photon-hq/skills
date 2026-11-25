@@ -105,7 +105,15 @@ process.once("SIGTERM", () => stop.abort());
 process.once("SIGINT", () => stop.abort());
 
 await bot.initialize();
-await bot.getAdapter("photon").startGatewayListener({}, Infinity, stop.signal);
+let listening: Promise<unknown> = Promise.resolve();
+await bot.getAdapter("photon").startGatewayListener(
+  { waitUntil: (task) => { listening = task; } }, // the call returns before the listener ends
+  Infinity,
+  stop.signal,
+);
+await listening; // ends on stop, or when Photon refuses or closes the connection
+await bot.shutdown(); // closes the Redis connection so the process can exit
+if (!stop.signal.aborted) process.exitCode = 1; // stopped on its own: let your supervisor restart it
 ```
 
 ### Threads and direct messages

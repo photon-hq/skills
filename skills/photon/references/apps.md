@@ -68,6 +68,9 @@ An App can also be described by a manifest on its own domain instead of being re
 - Deliveries carry `app_installation_id`; message events carry `data.organizationId`, `data.projectId` and the
   message in `data.object`. Look up the installation, check the organization matches the one bound to it,
   and resolve your customer from that stored link, never from a query parameter or the body alone.
+- Events can arrive before step 6 of the install has stored that binding. Durably quarantine valid events for
+  an installation whose binding is still pending, and process them once it is stored; never route them to a
+  default customer.
 - Deduplicate on `(app_installation_id, event.id)` atomically with the enqueue, return `2xx`, and work
   asynchronously. Expect retries and out-of-order delivery.
 - A webhook response never sends a message. Reply with `POST /v1/projects/{projectId}/messages` using the
