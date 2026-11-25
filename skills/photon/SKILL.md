@@ -75,7 +75,8 @@ they buy a plan ([Photon](https://photon.codes/docs/beta/photon.md)).
 | Let an AI client work with their account through MCP | [mcp.md](references/mcp.md) |
 | Call the API from TypeScript, Python or Rust | [api-and-sdks.md](references/api-and-sdks.md) |
 | Receive messages and events | [webhooks-and-ws.md](references/webhooks-and-ws.md) |
-| Choose or connect iMessage, SMS, WhatsApp Business, Telegram, email or voice | [channels.md](references/channels.md) |
+| Choose a channel, or compare what each needs | [channels.md](references/channels.md) |
+| Connect or send on one channel | The file for it: [iMessage](references/channels/imessage.md), [SMS](references/channels/sms.md), [WhatsApp Business](references/channels/whatsapp-business.md), [Telegram](references/channels/telegram.md), [email](references/channels/email.md), [voice](references/channels/voice.md) |
 | Build a Chat SDK bot, or use the Convex or Dify integrations | [chat-sdk.md](references/chat-sdk.md) |
 | Build a product that other organizations install | [apps.md](references/apps.md) |
 

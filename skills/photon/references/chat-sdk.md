@@ -116,6 +116,11 @@ await bot.shutdown(); // closes the Redis connection so the process can exit
 if (!stop.signal.aborted) process.exitCode = 1; // stopped on its own: let your supervisor restart it
 ```
 
+The cursor only means an event was handed to the bot. Adapter 0.3.0 saves it right after dispatching the
+event, before your handler finishes, so an event whose handler throws or whose process dies mid-reply is not
+delivered again. If a missed message is unacceptable, use webhooks, or store each incoming message durably
+before replying and work from that store.
+
 ### Threads and direct messages
 
 A thread ID is `photon:<spaceId>:<agentUserId>:<spaceKind>`; replies go out as that Agent User. To start a

@@ -163,7 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - Channel rules still apply: a shared iMessage line sends only in direct Spaces to a person who has messaged
   it since their assignment. SMS and MMS need current Platforms authorization for the sender and every
   recipient, and campaign eligibility (an approved 10DLC campaign for US numbers) unless every recipient is
-  in-network ([channels.md](channels.md)).
+  in-network ([channels/sms.md](channels/sms.md)).
 - Ask the user before any send, including tests.
 
 TypeScript, using a project API key with `project:read` and `project:write`:

@@ -69,14 +69,8 @@ person's account, with their role in every organization they belong to. Source:
 https://github.com/photon-hq/mcp-server.
 
 1. The person creates the key under [Service keys](https://app.beta.photon.codes/account/service-keys).
-2. The person adds the server to their own client configuration, in one of these forms (the docs' forms, with
-   the key kept out of shell history and `@latest` added):
-
-   ```bash
-   read -rsp "Photon service key: " PHOTON_API_KEY; echo
-   claude mcp add photon --env PHOTON_API_KEY="$PHOTON_API_KEY" -- npx -y @photon-ai/mcp@latest
-   unset PHOTON_API_KEY
-   ```
+2. The person adds the server to their own client's configuration file, with the key in its `env` block
+   (`@latest` added to the docs' form):
 
    ```json
    {
@@ -90,13 +84,13 @@ https://github.com/photon-hq/mcp-server.
    }
    ```
 
-   A key typed into a command lands in shell history; `read` without echo keeps it out (zsh:
-   `read -rs "PHOTON_API_KEY?Photon service key: "; echo`).
+   Edit the file rather than passing the key on a command line (`claude mcp add --env ...`): a command's
+   arguments land in shell history and can be read by other processes on the machine.
 
 Rules for agents:
 
-- Don't ask for, type, or paste the real key. Give the person the commands above and let them run them, or
-  have them edit their own client configuration.
+- Don't ask for, type, or paste the real key. Show the person the configuration above and let them
+  add it to their own client configuration.
 - The real key goes only in the person's local client configuration, never in a shared or project file (a
   committed `.mcp.json`, `.cursor/mcp.json` or `.vscode/mcp.json`) and never in source control.
 - `PHOTON_API_URL` defaults to `https://api.photon.codes`; leave it unset.

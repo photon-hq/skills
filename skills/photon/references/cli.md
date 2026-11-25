@@ -138,7 +138,7 @@ photon project platform operation cancel <pho_opr_...> --yes
   WhatsApp, pass `handoff.url` to the user.
 - Voice routing lives under `photon project platform voice profile ...` (`create --default`,
   `inbound set <profile-id|default> --sip-uri <uri>`, `outbound enable|rotate|revoke`) and
-  `voice assignment set|clear`. Read `--help` for each before use; see [channels.md](channels.md#voice).
+  `voice assignment set|clear`. Read `--help` for each before use; see [channels/voice.md](channels/voice.md).
 
 ### API keys
 
