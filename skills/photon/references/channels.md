@@ -8,7 +8,7 @@ Docs: [Get started](https://photon.codes/docs/beta/index.md), [Messaging](https:
 | Channel | Status on 2.0 | Needs |
 | --- | --- | --- |
 | iMessage | Available | A shared-line assignment (Free, Pro) or a dedicated line (Business) |
-| SMS | Available | A purchased Photon number; US sends need an approved 10DLC campaign |
+| SMS | Available | A purchased Photon number; US sends need an approved 10DLC campaign unless all recipients are in-network |
 | WhatsApp Business | Available | A Photon SMS number or your own number, connected through Photon |
 | WhatsApp (personal) | Not released (internal testing as of 2026-10-22) | Don't build on it yet |
 | Telegram | Available | A bot you own; one bot per project |
@@ -54,7 +54,10 @@ channels: connecting one doesn't enable the other.
   Ask first. Release with `sms delete <pho_res_...>` (also ask first).
 - A new number reports `detail.activationState: "activating"` for about 15 minutes after creation, then
   `"active"`. `active` doesn't prove the carrier is ready. List owned numbers with `state=active`.
-- Sending to US numbers needs an approved 10DLC campaign. Buying a number doesn't complete compliance.
+- Sending to US numbers needs an approved 10DLC campaign unless every recipient is in-network, and every send
+  needs current Platforms authorization for the sender and each recipient
+  ([Send a Message](https://photon.codes/docs/beta/api-client/sdk/projects/send-message.md)). Buying a number
+  doesn't complete compliance.
 - No short codes: Photon SMS numbers can't send to or receive from them.
 - General OTP filtering is off on SMS numbers, but don't use them for third-party account registration.
 - WhatsApp Business registration codes sent to a Photon SMS number never appear in SMS history, the history
@@ -68,9 +71,15 @@ channels: connecting one doesn't enable the other.
 - Use a Photon SMS number (through Photon only, never another provider) or a number you own. Not a Photon
   iMessage number.
 - Connecting a new WhatsApp Business Account runs Meta's signup in a browser, which a person must complete.
-  From the CLI, `photon project platform whatsapp-business number add --source byon --no-browser --json`
-  prints a `handoff` with the dashboard URL to pass to the person. Numbers added to an already connected
-  account can go through the API ([Create WhatsApp VoIP sender](https://photon.codes/docs/beta/api-client/sdk/projects/platforms/create-whatsapp-voip-sender.md)).
+  Pick the CLI path by number source; each prints a `handoff` with the dashboard URL to pass to the person
+  ([Platform resources](https://photon.codes/docs/beta/cli/projects/platform.md#automation-and-agent-flows)):
+  - Your own number: `photon project platform whatsapp-business number add --source byon --no-browser --json`.
+  - A Photon SMS number: `... number add --source photon --new-waba --voip-resource-id <pho_res_...>
+    --no-browser --json`.
+- A Photon SMS number can join an already connected account without a browser:
+  `... number add --source photon --waba-id <id> --voip-resource-id <pho_res_...> --display-name <name>
+  --idempotency-key <key> --json`, or the API
+  ([Create WhatsApp VoIP sender](https://photon.codes/docs/beta/api-client/sdk/projects/platforms/create-whatsapp-voip-sender.md)).
 - A number still activating answers `409 WHATSAPP_VOIP_SOURCE_ACTIVATING`; retry once it is `active`.
 - Treat a verification code from the API as a secret: never log it.
 - Disconnecting stops Photon from using the number; the number stays on the business account at Meta until a
@@ -113,7 +122,9 @@ channels: connecting one doesn't enable the other.
   doesn't go through the messaging API.
 - Eligible numbers: a Photon SMS number or a dedicated iMessage or WhatsApp number. Shared lines can't take
   calls.
-- Routing uses Voice profiles: a project default plus optional additional profiles. Set the inbound SIP
+- Routing uses Voice profiles: a project default plus optional additional profiles. Check with
+  `photon project platform voice profile view default`; if the project has no default yet, create it with
+  `voice profile create --default` (ask first), and keep an existing one. Then set the inbound SIP
   destination with `photon project platform voice profile inbound set <profile-id|default> --sip-uri <uri>`
   (`sips:` selects TLS). Editing a profile affects new calls on every line that uses it: ask first.
 - A saved destination doesn't prove a working call: verify audio both ways with a real call.

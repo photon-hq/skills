@@ -91,7 +91,8 @@ Read-only commands need no confirmation. Everything else changes the account: as
 photon project list --org <pho_org_...> [--search <text>] [--limit 30] [--page-token <token>] --json
 photon project count --org <pho_org_...> --json
 photon project view --project <pho_prj_...> --json
-photon project create --name "Support line" --slug support-line --idempotency-key <key> --json   # change
+photon project create --name "Support line" --slug support-line --org <pho_org_...> \
+  --idempotency-key <key> --json                                                                 # change
 photon project edit --name "New name" --project <pho_prj_...>                                     # change
 photon project delete <pho_prj_...> --yes                                                        # destructive
 ```
@@ -118,7 +119,7 @@ photon project platform sms delete <pho_res_...> --yes                          
 photon project platform email connect <domain> [--no-wait] [--no-browser]
 photon project platform email dns <pho_opr_...>                 # DNS records to publish
 photon project platform email disconnect <pho_res_...> --yes
-photon project platform telegram connect [--no-browser]         # one bot per project
+photon project platform telegram connect --no-wait --no-browser --json   # link in operation.detail.setupUrl
 photon project platform telegram disconnect <pho_res_...> --yes
 photon project platform whatsapp-business number add --source byon --no-browser --json   # browser handoff
 photon project platform operation cancel <pho_opr_...> --yes
@@ -128,8 +129,11 @@ photon project platform operation cancel <pho_opr_...> --yes
   another. Use a fresh key for each new resource.
 - Purchases poll until done; dedicated iMessage provisioning can take hours. Ctrl-C stops only the local
   wait; `photon operation replay <local-id>` resumes it without buying again.
-- `telegram connect` and `whatsapp-business number add --source byon` hand off to a person in Telegram or the
-  dashboard. With `--json`, pass the printed link or `handoff.url` to the user.
+- `telegram connect` and `whatsapp-business number add` without `--waba-id` hand off to a person in Telegram
+  or the dashboard. Without `--no-wait`, `telegram connect` waits for the bot and prints its link only on
+  stderr, so pass `--no-wait` and send `operation.detail.setupUrl` to the user; run `connect` again to pick
+  the setup back up. Treat that link as a secret: whoever opens it can connect a bot to the project. For
+  WhatsApp, pass `handoff.url` to the user.
 - Voice routing lives under `photon project platform voice profile ...` (`create --default`,
   `inbound set <profile-id|default> --sip-uri <uri>`, `outbound enable|rotate|revoke`) and
   `voice assignment set|clear`. Read `--help` for each before use; see [channels.md](channels.md#voice).
@@ -185,7 +189,9 @@ photon operation view <local-id>
 photon operation replay <local-id>    # finish or re-read the same operation
 ```
 
-With `PHOTON_API_TOKEN` there is no journal; repeat the command with the same `--idempotency-key`.
+With `PHOTON_API_TOKEN` there is no journal, and a key the CLI generates can't be matched later. Pass your own
+`--idempotency-key` on every write that takes one, keep it until the result is known, and repeat a failed write
+with the same key and the same input.
 
 ## JSON output, errors and exit codes
 
@@ -194,6 +200,8 @@ With `PHOTON_API_TOKEN` there is no journal; repeat the command with the same `-
 - With `--json`, a failure prints `{"error": {...}}` on stdout with `code` (branch on it), `message`,
   `retryable`, `retryAfterSeconds`, `requestId`, `docsUrl`, `issues`, and `next`: ordered fix steps, each with a
   `run` command or a `url`, and `person: true` when only a person can do it (for example adding a card).
+  One exception: a command that fails after or while writing its result to stdout puts the error object on
+  stderr. Check the exit code first; anything but `0` is a failure even when stdout holds a result.
 - Exit codes: `0` success, `1` failure (including a declined confirmation), `2` invalid usage
   (`CONFIRMATION_REQUIRED`, `PROJECT_NOT_SELECTED`, `ORGANIZATION_NOT_SELECTED`, `LEGACY_COMMAND`,
   `LEGACY_TOKEN`, `AUTH_ENVIRONMENT_KEY_SET`), `4` sign-in needed, `130` Ctrl-C.

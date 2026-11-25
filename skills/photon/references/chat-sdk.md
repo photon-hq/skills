@@ -29,6 +29,7 @@ subscriptions, deduplication and the WebSocket resume cursor; in-memory state is
 | `PHOTON_WEBHOOK_SECRET` | `webhookSecret` | Webhooks only. The destination's `whsec_...` secret |
 | `PHOTON_AGENT_USER_ID` | `agentUserId` | Only for `openDM`. The Agent User (`pho_usr_...`) that starts conversations |
 | `PHOTON_API_URL` | `baseUrl` | Defaults to `https://api.photon.codes`; leave unset |
+| `REDIS_URL` | read by `createRedisState()`, not the adapter | Required. A reachable Redis, such as `redis://localhost:6379` or a hosted Redis URL |
 
 Values come from the server environment or secret manager. For local development the docs use a gitignored
 `.env.local`; check that it is ignored, write placeholders only, and let the person fill in real values.
@@ -95,7 +96,17 @@ await bot.getAdapter("photon").startGatewayListener();
 ```
 
 It runs for three minutes by default, reconnects, and keeps its cursor in the state adapter. Prefer webhooks
-on serverless hosts.
+on serverless hosts. For a long-running process, pass `Infinity` as the duration with an `AbortSignal` to
+stop it (adapter 0.3.0's `startGatewayListener(options, durationMs, abortSignal)`):
+
+```ts
+const stop = new AbortController();
+process.once("SIGTERM", () => stop.abort());
+process.once("SIGINT", () => stop.abort());
+
+await bot.initialize();
+await bot.getAdapter("photon").startGatewayListener({}, Infinity, stop.signal);
+```
 
 ### Threads and direct messages
 
@@ -131,6 +142,10 @@ A Convex component that receives `message.received` webhooks (API version `2026-
 before acknowledging it, and runs your function per conversation turn; replies, read receipts and typing go
 through an outbox with retries. It does not filter senders, so guard against bot loops. Docs:
 [Convex](https://photon.codes/docs/beta/integrations/convex.md) (component 0.2.0, Convex 1.31+).
+
+The component copies the project ID, API key and base URL into its own `config` table, so anyone who can view
+the deployment's data in the Convex dashboard can read the key. Tell the user before they configure it, give
+the key only `project:write`, and limit who can view deployment data.
 
 ## Dify
 

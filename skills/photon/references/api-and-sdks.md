@@ -15,7 +15,7 @@ API reference shows the call in TypeScript, Python, Rust and Go.
 | --- | --- | --- | --- |
 | TypeScript | `npm install @photon-ai/api` | `import { Photon } from "@photon-ai/api"` (ES module) | Node.js 22+ |
 | Python | `pip install photonhq-api` | `from photon_api import Photon` (also `AsyncPhoton`) | Python 3.11+ |
-| Rust | `cargo add photonhq-api` and `cargo add tokio --features macros,rt-multi-thread` | `use photon_ai_api::...` | Rust 1.88+, Tokio |
+| Rust | `cargo add photonhq-api`, `cargo add reqwest@0.13 --no-default-features` (for `HeaderMap`) and `cargo add tokio --features macros,rt-multi-thread` | `use photon_ai_api::...` | Rust 1.88+, Tokio |
 | Go | `go get github.com/photon-hq/api/packages/go` | `photonapi` | Go 1.25+ |
 
 All four share one version number (0.8.0 on 2026-11-25). Below 1.0, a minor release can break code, so pin
@@ -99,14 +99,19 @@ with Photon(
 
 ```rust
 use photon_ai_api::{Credential, ListProjectsParams, PhotonClientBuilder, SecretString};
+use reqwest::header::{HeaderMap, HeaderValue};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = std::env::var("PHOTON_API_KEY")?;
     let organization_id = std::env::var("PHOTON_ORGANIZATION_ID")?;
 
+    let mut headers = HeaderMap::new();
+    headers.insert("Photon-Version", HeaderValue::from_static("2026-07-01"));
+
     let credential = Credential::Bearer(SecretString::from(api_key));
     let client = PhotonClientBuilder::new()
+        .static_headers(headers)
         .credential("accountServiceKey", credential)
         .build()?;
 
@@ -156,7 +161,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - To reply, reuse the incoming message: `space.id` as `spaceId`, `receivedBy.id` as `senderId`, its `id` as
   `parentMessageId`, and a stable key such as `reply:<incoming message id>`, kept across retries.
 - Channel rules still apply: a shared iMessage line sends only in direct Spaces to a person who has messaged
-  it since their assignment; US SMS needs an approved 10DLC campaign ([channels.md](channels.md)).
+  it since their assignment. SMS and MMS need current Platforms authorization for the sender and every
+  recipient, and campaign eligibility (an approved 10DLC campaign for US numbers) unless every recipient is
+  in-network ([channels.md](channels.md)).
 - Ask the user before any send, including tests.
 
 TypeScript, using a project API key with `project:read` and `project:write`:
@@ -267,8 +274,11 @@ do {
 [Retries, timeouts, and idempotency](https://photon.codes/docs/beta/api-client/retries-and-timeouts.md)
 
 - The clients retry `GET` requests and requests carrying an `Idempotency-Key`, on `408`, `429`, `502`, `503`
-  and `504`, up to 3 attempts, honoring `Retry-After` up to 60 seconds. Each attempt times out after 30
-  seconds by default. `500` is not retried.
+  and `504`, up to 3 attempts, honoring `Retry-After` up to 60 seconds. `500` is not retried.
+- Timeouts apply within each attempt, never to the whole call. TypeScript and Rust default to 30 seconds per
+  attempt; Python's 30 seconds apply separately to connecting, writing, reading and waiting for a pooled
+  connection. The Go client sets no timeout: pass a `context.WithTimeout` to each call, or an `http.Client`
+  with `Timeout` through `WithHTTPClient`.
 - Most writes require an idempotency key (`400 IDEMPOTENCY_KEY_REQUIRED` without one). Use one new key per
   logical change (a UUID, or an ID derived from the inbound event) and keep it while you retry that change,
   even after a timeout or restart. A replayed result has `Idempotent-Replayed: true`.

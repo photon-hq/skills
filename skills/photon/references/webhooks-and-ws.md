@@ -120,6 +120,9 @@ export async function POST(request: Request): Promise<Response> {
 import { io } from "socket.io-client";
 
 let cursor = await loadCursor(); // your storage; 0 on first run starts with new events
+let epoch = 0;   // bumped to drop queued work after a failure or disconnect
+let pending = 0;
+let queue = Promise.resolve();
 
 const socket = io("https://api.photon.codes", {
   path: `/v1/projects/${process.env.PHOTON_PROJECT_ID}/events/ws`,
@@ -135,25 +138,36 @@ socket.on("connect", () => {
     if (!result.ok) console.error(result.error.code);
   });
 });
-
-let queue = Promise.resolve();
+socket.on("disconnect", () => { epoch++; });
 socket.on("delivery", (event, { seq }) => {
+  const generation = epoch;
+  if (++pending > 128) {         // queue full: reconnect and replay from the saved cursor
+    pending--;
+    epoch++;
+    socket.io.engine.close();
+    return;
+  }
   queue = queue.then(async () => {
-    if (seq <= cursor) return;   // replayed after a reconnect
+    if (generation !== epoch || seq <= cursor) return; // dropped, or replayed after a reconnect
     await handleEvent(event);    // your idempotent handler
     await saveCursor(seq);       // persist before advancing
     cursor = seq;
   }).catch((error) => {
     console.error("Event processing failed", error);
-    socket.disconnect();         // stop; restart later from the saved cursor
-  });
+    if (generation === epoch) {  // skip everything queued after the failure
+      epoch++;
+      socket.io.engine.close();  // reconnect and resume from the saved cursor
+    }
+  }).finally(() => { pending--; });
 });
 socket.on("delivery_error", (error) => console.error(error.code));
 socket.on("connect_error", (error) => console.error(error.message));
 socket.connect();
 ```
 
-`loadCursor`, `saveCursor` and `handleEvent` are yours. The docs' Node.js example adds a bounded queue.
+`loadCursor`, `saveCursor` and `handleEvent` are yours. This is the docs' Node.js example with the cursor
+saved: at most 128 deliveries wait, and a failure or a full queue drops all queued work and reconnects from
+the last saved cursor.
 
 Rules:
 
@@ -163,7 +177,12 @@ Rules:
 - Cursors are opaque and can have gaps. If the last processed cursor is `42`, subscribe with `42`, not `43`.
   Never reset to `0` on reconnect: that skips the gap. Store one cursor per project and per consumer.
 - Process deliveries one at a time and save the cursor only after the handler succeeds. On a failure, stop
-  and resume from the saved cursor. Redelivery happens, so handlers must be idempotent.
+  before handling later deliveries and resume from the saved cursor. Redelivery happens, so handlers must be
+  idempotent.
+- Until the first event is handled and its cursor saved, there is no checkpoint: restarting with `0` starts
+  with new events and doesn't recover any missed before then
+  ([Client examples](https://photon.codes/docs/beta/websocket/example.md#checkpointed-examples)). If those
+  can't be lost, use a webhook: Photon retries a failed delivery for up to four days or 20 attempts.
 - Socket.IO reconnects on its own; don't add a second retry loop. For `connect_error` (authentication) or an
   explicit server disconnect, fix the cause before connecting again.
 - Replay covers only retained history; it is not an archive or an exactly-once guarantee.

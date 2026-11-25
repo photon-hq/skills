@@ -69,10 +69,13 @@ person's account, with their role in every organization they belong to. Source:
 https://github.com/photon-hq/mcp-server.
 
 1. The person creates the key under [Service keys](https://app.beta.photon.codes/account/service-keys).
-2. The person adds the server to their own client configuration. The docs' forms:
+2. The person adds the server to their own client configuration, in one of these forms (the docs' forms, with
+   the key kept out of shell history and `@latest` added):
 
    ```bash
-   claude mcp add photon --env PHOTON_API_KEY=pho_ask_... -- npx -y @photon-ai/mcp
+   read -rsp "Photon service key: " PHOTON_API_KEY; echo
+   claude mcp add photon --env PHOTON_API_KEY="$PHOTON_API_KEY" -- npx -y @photon-ai/mcp@latest
+   unset PHOTON_API_KEY
    ```
 
    ```json
@@ -80,23 +83,29 @@ https://github.com/photon-hq/mcp-server.
      "mcpServers": {
        "photon": {
          "command": "npx",
-         "args": ["-y", "@photon-ai/mcp"],
+         "args": ["-y", "@photon-ai/mcp@latest"],
          "env": { "PHOTON_API_KEY": "pho_ask_..." }
        }
      }
    }
    ```
 
+   A key typed into a command lands in shell history; `read` without echo keeps it out (zsh:
+   `read -rs "PHOTON_API_KEY?Photon service key: "; echo`).
+
 Rules for agents:
 
-- Don't ask for, type, or paste the real key. Give the person the command with the placeholder and let them
-  run it, or have them edit their own client configuration.
+- Don't ask for, type, or paste the real key. Give the person the commands above and let them run them, or
+  have them edit their own client configuration.
 - The real key goes only in the person's local client configuration, never in a shared or project file (a
   committed `.mcp.json`, `.cursor/mcp.json` or `.vscode/mcp.json`) and never in source control.
 - `PHOTON_API_URL` defaults to `https://api.photon.codes`; leave it unset.
 - Photon is removing the API's fallback for requests without `Photon-Version` one API at a time from
-  2026-11-23. Keep `npx -y @photon-ai/mcp` on the latest release
-  ([API contract versioning](https://photon.codes/docs/beta/api-client/api-versioning.md)).
+  2026-11-23 ([API contract versioning](https://photon.codes/docs/beta/api-client/api-versioning.md));
+  `@photon-ai/mcp` 0.1.17 sends the header. Write `@photon-ai/mcp@latest`: a bare `@photon-ai/mcp` runs
+  whatever version the current project has installed
+  ([npm exec](https://docs.npmjs.com/cli/v11/commands/npm-exec/)). A running server keeps its version until
+  the client restarts it.
 - To stop a local server, the person deletes its key under Service keys.
 
 ## Security

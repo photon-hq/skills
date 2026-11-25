@@ -90,7 +90,10 @@ Present a short plan once, get one yes, then run every step without asking again
      in the plan. If the user wants to keep 1.0, skip the install and write `npx -y @photon-ai/cli@latest`
      wherever a step below says `photon`.
    - `node --version`: the npm package needs Node.js 22 or newer; without it, plan the standalone binary
-     ([Installation](https://photon.codes/docs/beta/cli/installation.md)).
+     ([Installation](https://photon.codes/docs/beta/cli/installation.md)). To keep 1.0 as well, install the
+     binary into its own folder and leave `PATH` alone:
+     `curl -fsSL https://github.com/photon-hq/cli/releases/latest/download/install.sh | PHOTON_BIN_DIR="$HOME/.photon-cli-3/bin" PHOTON_NO_MODIFY_PATH=1 sh`,
+     then write `~/.photon-cli-3/bin/photon` wherever a step below says `photon`.
    - Whether your client already has a `photon` MCP server, and whether `PHOTON_API_TOKEN` is set (then the
      CLI uses that key and `photon login` refuses).
 2. **Show the plan** in one message, adapted to what you found:

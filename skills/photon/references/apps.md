@@ -54,6 +54,9 @@ An App can also be described by a manifest on its own domain instead of being re
    redemption.
 5. Exchange the client credentials for an access token (`grant_type=client_credentials`) at the token
    endpoint Photon gives you for the environment. Never infer that URL or accept one from a user.
+6. With that token, call `GET /v1/organizations/current` (needs `organization:read`) and store the verified
+   organization ID with your customer account and the `installationId`. The event checks below rely on this
+   binding.
 
 ## Receive events and reply
 
