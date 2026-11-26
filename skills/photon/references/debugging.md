@@ -11,7 +11,7 @@ webhook are not fixes to try: each needs the user's yes, and most hide the real 
 | The API error | `code` (branch on it), HTTP status, `requestId`. CLI errors also carry `next` steps |
 | Dashboard [API Activities](https://app.beta.photon.codes/project/activity) | Send outcomes and request history |
 | Dashboard [Event Deliveries](https://app.beta.photon.codes/project/activity/events) | Webhook attempts and why they failed |
-| MCP `listDeveloperTraces` (filter by `requestId`, `httpStatusCode`, `route`), `getDeveloperTrace`, `listDeveloperOtelLogs` | What happened to one request inside Photon |
+| MCP `listDeveloperTraces` (needs a `from`/`to` time range; filter by `requestId`, `httpStatusCode`, `route`), `getDeveloperTrace`, `listDeveloperOtelLogs` | What happened to one request inside Photon |
 | MCP or API `queryMessageMetrics` | Read-only SQL over the project's message and call events (get the schema with `getMessageMetricsSqlSchema` first) |
 | The dashboard's channel page (for example the iMessage page) | The conversation as Photon sees it |
 
@@ -63,7 +63,8 @@ A refused connection arrives as `connect_error` with no status or code. Don't re
 
 ## The reply is accepted but not delivered
 
-`202` means accepted. Read the message's `status` and `failure`, then:
+`202` means accepted. Read the message's `status` and `failure`. Shared-line rule breaks don't get here: they are refused at send time with a `403` (table
+below), so code that logs "sent" without checking the response hides them. Then:
 
 - The send reused the incoming message's `space.id` and `receivedBy.id`, and the key has `project:write`.
 - The channel allows it: a shared line sends only to someone who messaged it since their assignment, only

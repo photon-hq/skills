@@ -167,8 +167,10 @@ photon project webhook api-version list --project <pho_prj_...> --json     # "se
 photon project webhook event-type list --api-version 2026-07-01 --project <pho_prj_...> --json
 photon project webhook list|view <pho_whd_...> --project <pho_prj_...> --json
 photon project webhook create --name <name> --url https://... --api-version 2026-07-01 \
-  --event message.received [--idempotency-key <key>] --project <pho_prj_...> --json   # secret once
-photon project webhook edit <pho_whd_...> --status disabled --project <pho_prj_...>
+  --event message.received [--status disabled] [--idempotency-key <key>] --project <pho_prj_...> --json   # secret once
+photon project webhook edit <pho_whd_...> --status enabled|disabled --project <pho_prj_...>
+# Create it disabled while the receiver isn't deployed yet, so failed deliveries don't pile up; enable it once
+# an unsigned POST to the public URL returns 400.
 photon project webhook rotate-secret <pho_whd_...> [--overlap-seconds 86400] --yes --project <pho_prj_...> --json   # secret once
 photon project webhook delete <pho_whd_...> --yes --project <pho_prj_...>
 ```

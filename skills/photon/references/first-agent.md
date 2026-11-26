@@ -207,7 +207,9 @@ The agent must:
 3. Answer only a message that is on `imessage`, sent by a human (`sentBy.kind === "human"`), received by
    the agent (`receivedBy.kind === "agent"` and `receivedBy.handle === PHOTON_AGENT_HANDLE`), in a direct
    space (`space.kind === "direct"`), with plain text, and in shared mode from `PHOTON_TEST_SENDER`
-   (`sentBy.handle`; compare an email case-insensitively).
+   (`sentBy.handle`; compare an email case-insensitively). This keeps a test agent from answering
+   strangers; say so in the report, because anyone else the user adds later needs both their own
+   assignment and a change to this filter.
 4. Reply once with `sendMessage`, reusing `space.id`, `receivedBy.id` and `id`, with the idempotency key
    `reply:<message id>` ([api-and-sdks.md](api-and-sdks.md#reply-to-a-message)). The minimal reply:
    `Photon is connected. You said: <message>`.
@@ -246,7 +248,9 @@ the exact command you verified.
 
 Only after the subscription is acknowledged (or the webhook is enabled):
 
-- Shared: "Send "Hello Photon" from <test sender> to <assignedPhoneNumber>." Remind them to send from
+- Shared: "Send "Hello Photon" from <test sender> to <assignedPhoneNumber>." Make this the report's one
+  next action and say why it must come first: a shared line can't message anyone first, so the agent stays
+  silent until that person texts it. Remind them to send from
   exactly that phone number or Apple-account email (on iPhone: Settings, Apps, Messages, Send & Receive),
   in a new direct conversation, as an iMessage, not SMS.
 - Dedicated: "Send "Hello Photon" to <line number>" from their own phone, never from another Photon line.

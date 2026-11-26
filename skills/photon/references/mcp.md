@@ -92,6 +92,15 @@ Not on MCP (hosted or local). Route these elsewhere:
 An agent with only MCP can't finish a setup on its own (no API key, no webhook). Say so and use the CLI
 or the dashboard for those steps.
 
+## Calling a tool
+
+Arguments are grouped the way the HTTP request is: `{ "path": { ... }, "query": { ... }, "body": { ... } }`,
+for example `listMessages` takes `{ "path": { "projectId": "pho_prj_..." }, "query": { "createdSince": "..." } }`.
+Read each tool's input schema rather than guessing; required parameters (such as `from` and `to` on
+`listDeveloperTraces`) are enforced. Don't pass an idempotency key: the server sets its own (below).
+For "today" or "this week", take the user's time zone from their machine (`date +%Z`) or ask, rather than
+assuming one.
+
 ## Retrying a write
 
 The server makes a new idempotency key for each tool call. A second call of `sendMessage`,
