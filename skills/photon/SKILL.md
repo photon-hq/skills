@@ -115,9 +115,11 @@ be replaced (create the new key, deploy it, then revoke the old one).
 `photon project api-key create`, `photon project webhook create` and `rotate-secret`,
 `photon project platform voice profile outbound enable` and `rotate`, `photon org oauth-client secret
 create` and `rotate`, and the replay of any of them, print a secret exactly once on stdout. You may run
-these yourself, but only after the user says yes to that exact key or destination, and only like this:
+these yourself, but only after the user says yes to that exact key or destination, and only like this.
+Check the env file first, so a refusal doesn't cost the secret:
 
 ```sh
+node <this skill>/scripts/store-secret.mjs --check --file .env.local
 set -o pipefail
 photon project api-key create --project <pho_prj_...> --name my-agent \
   --permission project:read --permission project:write \

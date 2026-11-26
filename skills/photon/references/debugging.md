@@ -63,8 +63,8 @@ A refused connection arrives as `connect_error` with no status or code. Don't re
 
 ## The reply is accepted but not delivered
 
-`202` means accepted. Read the message's `status` and `failure`. Shared-line rule breaks don't get here: they are refused at send time with a `403` (table
-below), so code that logs "sent" without checking the response hides them. Then:
+`202` means accepted. Read the message's `status` and `failure`. Shared-line rule breaks don't get here: they are refused at send time with a `403` or `422`
+(table below), so code that logs "sent" without checking the response hides them. Then:
 
 - The send reused the incoming message's `space.id` and `receivedBy.id`, and the key has `project:write`.
 - The channel allows it: a shared line sends only to someone who messaged it since their assignment, only

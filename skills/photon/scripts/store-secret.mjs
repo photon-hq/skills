@@ -9,6 +9,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import tty from "node:tty";
 
 const HELP = `Usage: <photon command> --json | node store-secret.mjs --field <path> --key <NAME> --file <env file>
        node store-secret.mjs --check --file <env file>
@@ -35,6 +36,8 @@ Safety checks, before anything is written:
   - the file must not be a symbolic link;
   - inside a Git repository, Git must ignore the file and must not track it;
   - if Git can't answer (not installed, an error), nothing is written.
+  - Git's folder must be on the same file system as the file, which is replaced
+    whole by a rename.
 
 Other lines in the file are kept; an existing NAME= line is replaced. The file
 ends up with mode 0600. On success the only output is "stored NAME in FILE".
@@ -81,7 +84,9 @@ function parseArgs(argv) {
 }
 
 function readStdin() {
-  if (process.stdin.isTTY) fail("pipe the command's --json output into this script; it does not read secrets typed at a terminal", 2);
+  // tty.isatty, not process.stdin.isTTY: touching process.stdin makes a pipe non-blocking,
+  // and readFileSync(0) then fails with EAGAIN when the command is still running.
+  if (tty.isatty(0)) fail("pipe the command's --json output into this script; it does not read secrets typed at a terminal", 2);
   try {
     return fs.readFileSync(0, "utf8");
   } catch {
@@ -151,6 +156,10 @@ function checkTarget(file) {
   // Git never stages anything inside its own folder, so the temporary file goes there.
   const gitDir = git(["rev-parse", "--absolute-git-dir"], dir);
   if (gitDir.status !== 0 || !gitDir.stdout.trim()) fail(`Git could not name its folder for ${dir}; nothing was written`);
+  // The file is replaced by a rename from there, which works only on the same file system.
+  if (fs.statSync(gitDir.stdout.trim()).dev !== fs.statSync(dir).dev) {
+    fail(`Git's folder is on another file system than ${file}; pick a file on the same one`);
+  }
   return gitDir.stdout.trim();
 }
 
@@ -179,15 +188,9 @@ function writeEnv(file, key, value, tempDir) {
   try {
     fs.writeFileSync(temp, content, { mode: 0o600, flag: "wx" });
     fs.chmodSync(temp, 0o600);
-    try {
-      fs.renameSync(temp, file);
-    } catch (error) {
-      if (error.code !== "EXDEV") throw error;
-      // Git's folder is on another file system: write the checked file in place.
-      if (fs.existsSync(file)) fs.chmodSync(file, 0o600);
-      fs.writeFileSync(file, content, { mode: 0o600 });
-      fs.unlinkSync(temp);
-    }
+    // A rename either replaces the file whole or leaves it untouched. EXDEV (another
+    // file system) fails here too, and the target keeps its old content.
+    fs.renameSync(temp, file);
     fs.chmodSync(file, 0o600);
   } catch (error) {
     try {
@@ -198,7 +201,7 @@ function writeEnv(file, key, value, tempDir) {
 }
 
 const options = parseArgs(process.argv.slice(2));
-const tempDir = checkTarget(options.file);
+checkTarget(options.file);
 if (options.check) {
   process.stdout.write(`${options.file} can hold secrets\n`);
   process.exit(0);
@@ -221,5 +224,6 @@ if (typeof value !== "string" || value === "") {
 }
 if (/[\r\n\0]/.test(value)) fail("the value contains a line break; nothing was written");
 
-writeEnv(options.file, options.key, value, tempDir);
+// Check again: Git's view of the file may have changed while stdin was read.
+writeEnv(options.file, options.key, value, checkTarget(options.file));
 process.stdout.write(`stored ${options.key} in ${options.file}\n`);
