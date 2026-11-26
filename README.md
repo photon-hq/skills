@@ -9,11 +9,14 @@ Agent skills for [Photon](https://photon.codes): enterprise-ready messaging infr
 npx skills add photon-hq/skills --skill photon
 ```
 
+To set up Photon from the dashboard, copy its agent instruction, or tell your coding agent: *Set up Photon for me. Fetch https://photon.codes/setup.md and follow it.*
+
 ## Skills
 
 | Skill | Covers |
 | :--- | :--- |
 | [`photon`](./skills/photon/SKILL.md) | Set up Photon for a project with the hosted MCP server or the `photon` CLI (`@photon-ai/cli` 3.x), then build on the Photon API at `https://api.photon.codes/v1` with its TypeScript, Python and Rust clients: projects and API keys; iMessage, SMS, WhatsApp Business, Telegram, email and voice; webhooks and the WebSocket event stream; the Chat SDK adapter; and Photon Apps. |
+| [`buildspace-ci-cd`](./skills/buildspace-ci-cd/SKILL.md) | Photon's BuildSpace release workflows (internal tooling). |
 
 Skills are picked up by supported agents once installed: Claude Code, Cursor, Copilot, OpenCode and [many others](https://skills.sh/).
 
@@ -34,7 +37,7 @@ npx skills add photon-hq/skill-legacy --skill spectrum
 
 The two versions use different packages, API hosts and credentials. Keep each project on one of them.
 
-The BuildSpace skill moved to [photon-hq/buildspace](https://github.com/photon-hq/buildspace): `npx skills add photon-hq/buildspace --skill buildspace-ci-cd`.
+`buildspace-ci-cd` covers Photon's release workflows ([photon-hq/buildspace](https://github.com/photon-hq/buildspace)), not the messaging product. It stays here until it moves into the buildspace repo.
 
 ## Documentation
 
