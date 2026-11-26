@@ -19,7 +19,8 @@ Part of the Photon 2.0 skill. The overview of every channel, with costs, is in [
 - Inbound: `photon project platform voice profile inbound set <profile-id|default> --sip-uri <uri>`
   (`sips:` selects TLS). If the provider gives SIP credentials, pass `--sip-username` and the password
   through `--sip-password-file -` on stdin, never on the command line. Editing a profile affects new calls
-  on every line that uses it: ask first. The hosted MCP server can't set the inbound destination.
+  on every line that uses it: ask first. On a profile with assigned lines the command needs `--yes`, which
+  you pass only after that yes. The hosted MCP server can't set the inbound destination.
 - Outbound calling: `outbound enable <profile>` and `outbound rotate <profile>` print the SIP `password`
   once. Use the profile the line uses (from `voice assignment view`), not `default` unless that is it.
   Check the env file first (`store-secret.mjs --check --file .env.local`), then, after a yes, pipe the

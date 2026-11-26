@@ -4,7 +4,7 @@ The end-to-end job: a person texts the agent's number, the agent receives the me
 gets a reply. Do the setup yourself; don't hand the user a tutorial. Ask only when the user's input is
 really needed (which organization or project, the test sender's handle, approving the sign-in, any yes
 for a purchase, key or send). If the user only asked to sign in, stop after step 3; if they asked only to
-set Photon up, stop after step 4.
+pick or link a project, stop after step 4. "Set up Photon" means all ten steps.
 
 This page uses iMessage, the channel most users start with. For another channel, swap step 5 for that
 channel's file listed in [channels.md](channels.md), and in steps 8 to 10 use that channel instead of
@@ -147,6 +147,10 @@ don't buy another). Otherwise a new line is $250 per month on Business: buy only
 
 The agent's code uses a project API key with `project:read` and `project:write`, nothing more.
 
+Pick the env file first: the one the repository's own dev or start command loads, otherwise `.env.local`
+in the agent's folder. The commands below say `.env.local`; use the file you picked in all of them and in
+step 7.
+
 - If the env file already has `PHOTON_API_KEY`, read only its ID, never the whole value:
   `sed -n 's/^PHOTON_API_KEY=\(pho_sk_[0-9a-z]\{26\}\)_.*/\1/p' .env.local`. Keep the key if
   `photon project api-key list --project <id> --json` lists that ID, unexpired, with both permissions.
@@ -186,8 +190,7 @@ ask them to select this project first, and to paste the key into the env file, n
 
 ## 7. Configure the env file
 
-Use the repository's env file convention, otherwise `.env.local` in the agent's folder. Keep unrelated
-lines.
+Use the env file picked in step 6. Keep unrelated lines.
 
 | Variable | Value |
 | --- | --- |

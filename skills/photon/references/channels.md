@@ -9,7 +9,7 @@ send. Docs: [Get started](https://photon.codes/docs/beta/index.md),
 | Channel | Status on 2.0 | Needs | Details |
 | --- | --- | --- | --- |
 | iMessage | Available | A shared-line assignment per person (Free, Pro) or a dedicated line (Business) | [channels/imessage.md](channels/imessage.md) |
-| SMS | Available | A Photon number; US sends need an approved 10DLC campaign | [channels/sms.md](channels/sms.md) |
+| SMS | Available | A Photon number; US sends need an approved 10DLC campaign unless every recipient is in-network | [channels/sms.md](channels/sms.md) |
 | WhatsApp Business | Available | A Photon SMS number or your own number, connected through Meta's signup | [channels/whatsapp-business.md](channels/whatsapp-business.md) |
 | Telegram | Available | A bot the user owns; one bot per project | [channels/telegram.md](channels/telegram.md) |
 | Email | Available | A domain or unused subdomain whose DNS the user controls | [channels/email.md](channels/email.md) |
