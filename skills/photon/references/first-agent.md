@@ -200,6 +200,10 @@ Use the env file picked in step 6. Keep unrelated lines.
 | `PHOTON_TEST_SENDER` | Shared mode: the assignment's `handle` |
 | `PHOTON_WEBHOOK_SECRET` | Webhook delivery only, written by the script ([events.md](events.md#create-a-destination)) |
 
+Make sure the process step 9 starts actually loads this file: if the project's start command doesn't
+already, load it there (Node 22+: `node --env-file-if-exists=.env.local ...`; Python: `python-dotenv`; or the
+framework's own env loading). Without that, step 8's checks fail on a missing `PHOTON_API_KEY`.
+
 Check that the env file and `.photon/` are ignored and nothing secret is staged. Report variables by name
 and whether they load, never their values.
 
