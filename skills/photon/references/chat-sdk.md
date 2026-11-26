@@ -2,13 +2,15 @@
 
 ## `@photon-ai/chat-adapter`
 
-Connects [Chat SDK](https://chat-sdk.dev/docs) bots to every channel connected to a Photon 2.0 project:
-iMessage, SMS, WhatsApp, WhatsApp Business, Telegram and email. It calls the Photon API with a project API
+Connects [Chat SDK](https://chat-sdk.dev/docs) bots to the channels connected to a Photon 2.0 project:
+iMessage, SMS, WhatsApp Business, Telegram and email. The docs also list WhatsApp: that is personal
+WhatsApp, which isn't released yet ([channels.md](channels.md)), so don't plan on it. It calls the Photon API with a project API
 key and receives events through signed webhooks or the Socket.IO stream. Docs:
 [Chat SDK](https://photon.codes/docs/beta/integrations/chat-sdk.md). Source: https://github.com/photon-hq/chat-adapter.
 
-The docs page covers adapter 0.1.0 with Chat SDK 4.44.0; npm has 0.3.0 (peer `chat` ^4.44.0), which also
-sends `Photon-Version: 2026-07-01`. The code below type-checks against 0.3.0.
+The code below type-checks against adapter 0.3.0 (peer `chat` ^4.44.0), which sends
+`Photon-Version: 2026-07-01` itself. The docs page may describe an older adapter; check
+`npm view @photon-ai/chat-adapter version`.
 
 It replaces the retired `@photon-ai/chat-adapter-imessage` (Photon 1.0). It is a new adapter, not a rename:
 `createPhotonAdapter()` and `adapters.photon`, never `createiMessageAdapter()` or `adapters.imessage`.
@@ -32,7 +34,8 @@ subscriptions, deduplication and the WebSocket resume cursor; in-memory state is
 | `REDIS_URL` | read by `createRedisState()`, not the adapter | Required. A reachable Redis, such as `redis://localhost:6379` or a hosted Redis URL |
 
 Values come from the server environment or secret manager. For local development the docs use a gitignored
-`.env.local`; check that it is ignored, write placeholders only, and let the person fill in real values.
+`.env.local`. Write the key and webhook secret into it only through the pipe in
+[cli.md](cli.md#commands-that-print-a-secret), after the user's yes, or let the person paste them in.
 
 ### The bot
 
@@ -68,7 +71,7 @@ automated line in the project: two echo bots answer each other forever.
 ### Receive messages
 
 Webhook (public HTTPS): create a destination subscribed to `message.received`
-([webhooks-and-ws.md](webhooks-and-ws.md#create-a-destination)), then pass the original `Request`, unparsed:
+([events.md](events.md#create-a-destination)), then pass the original `Request`, unparsed:
 
 ```ts
 // app/api/webhooks/photon/route.ts (Next.js)
@@ -154,7 +157,8 @@ namespace.
 A Convex component that receives `message.received` webhooks (API version `2026-07-01`), stores each message
 before acknowledging it, and runs your function per conversation turn; replies, read receipts and typing go
 through an outbox with retries. It does not filter senders, so guard against bot loops. Docs:
-[Convex](https://photon.codes/docs/beta/integrations/convex.md) (component 0.2.0, Convex 1.31+).
+[Convex](https://photon.codes/docs/beta/integrations/convex.md) (written for component 0.2.0 and Convex
+1.31 or a later 1.x).
 
 The component copies the project ID, API key and base URL into its own `config` table, so anyone who can view
 the deployment's data in the Convex dashboard can read the key. Tell the user before they configure it, give

@@ -1,11 +1,25 @@
 # Telegram
 
-Part of the Photon 2.0 skill. The overview of every channel, with plans and what each needs, is in [channels.md](../channels.md).
+Part of the Photon 2.0 skill. The overview of every channel, with costs, is in [channels.md](../channels.md).
 
-- The project sends and receives through a bot the user owns. The person runs
-  `photon project platform telegram connect` (or uses the dashboard): it prints a setup link and a QR code
-  that they open in Telegram to pick or create a bot. The link is a secret (whoever opens it can connect a
-  bot), so the agent doesn't run `connect` itself; it checks progress with `photon project platform telegram list`.
-- One bot per project: connecting another returns `409 TELEGRAM_BOT_ALREADY_CONNECTED`. Disconnect the old
-  one first (ask first). Source: [changelog, November 21, 2026](https://photon.codes/docs/beta/changelog.md).
-- Platform setup: [Platform resources](https://photon.codes/docs/beta/cli/projects/platform.md#connect-a-telegram-bot).
+[Connect a Telegram bot](https://photon.codes/docs/beta/cli/projects/platform.md#connect-a-telegram-bot)
+
+- The project sends and receives through a bot the user owns. Connecting starts a setup with a link that
+  the person opens in Telegram to pick or create a bot and confirm the project. No per-message fee.
+- **The setup link is a secret**: whoever opens it can connect a bot to the project. Give it only to the
+  person, in this conversation, and never write it to a file, log, commit or shared channel.
+- Two ways to connect, after the user says yes:
+  - The person runs `photon project platform telegram connect --project <id>` in their own terminal (it
+    shows the link as a QR code and waits), or uses the dashboard. Prefer this when they can.
+  - You run `photon project platform telegram connect --no-wait --no-browser --project <id> --json` and
+    pass `operation.detail.setupUrl` to the person. Without `--no-wait` the command waits for the bot and
+    prints the link only on stderr. MCP: `connectTelegramBot`.
+- Check progress with `photon project platform telegram list --project <id> --json` (connected bots and
+  setups in progress) and `telegram view <pho_res_...>` (the bot's name, username, link and any
+  `connectionIssue`). A project has one setup at a time: running `connect` again continues it and prints
+  the same link. To start over, `photon project platform operation cancel <pho_opr_...> --yes`, then
+  connect again.
+- One bot per project: connecting another returns `409 TELEGRAM_BOT_ALREADY_CONNECTED` (`connect` asks
+  first, or exits 2 with `CONFIRMATION_REQUIRED` without `--yes`). Disconnect the old one first, only with
+  a yes: `photon project platform telegram disconnect <pho_res_...> --yes`. The bot stays the user's in
+  Telegram.

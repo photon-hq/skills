@@ -1,6 +1,6 @@
 # WhatsApp Business
 
-Part of the Photon 2.0 skill. The overview of every channel, with plans and what each needs, is in [channels.md](../channels.md).
+Part of the Photon 2.0 skill. The overview of every channel, with costs, is in [channels.md](../channels.md).
 
 [WhatsApp Business](https://photon.codes/docs/beta/messaging/whatsapp-business.md)
 
@@ -17,6 +17,8 @@ Part of the Photon 2.0 skill. The overview of every channel, with plans and what
   --voip-resource-id <pho_res_...> --display-name <name> --idempotency-key <key> --json`, or the API
   ([Create WhatsApp VoIP sender](https://photon.codes/docs/beta/api-client/sdk/projects/platforms/create-whatsapp-voip-sender.md)).
 - A number still activating answers `409 WHATSAPP_VOIP_SOURCE_ACTIVATING`; retry once it is `active`.
-- Treat a verification code from the API as a secret: never log it.
+- Treat a verification code from the API as a secret: never log it or show it in chat. The MCP server
+  doesn't return these codes.
+- No per-message fee for WhatsApp sends ([channels.md](../channels.md#costs)).
 - Disconnecting stops Photon from using the number; the number stays on the business account at Meta until a
   portfolio admin deletes it in WhatsApp Manager.

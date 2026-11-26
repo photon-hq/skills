@@ -63,7 +63,7 @@ An App can also be described by a manifest on its own domain instead of being re
 [Receive events and call APIs](https://photon.codes/docs/beta/apps/webhooks.md)
 
 - Verify with Standard Webhooks and the App's `whsec_...` secret on the raw body, exactly as for project
-  webhooks ([webhooks-and-ws.md](webhooks-and-ws.md#verify-with-standard-webhooks)), and check that the
+  webhooks ([events.md](events.md#verify-the-signature)), and check that the
   event's `id` equals the `webhook-id` header.
 - Deliveries carry `app_installation_id`; message events carry `data.organizationId`, `data.projectId` and the
   message in `data.object`. Look up the installation, check the organization matches the one bound to it,
