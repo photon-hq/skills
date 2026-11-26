@@ -213,7 +213,8 @@ after the command has printed would lose the secret. The script prints only `sto
 refuses a file that is a symbolic link, tracked by Git, or not ignored by Git, or when Git can't tell.
 
 PowerShell has no `set -o pipefail`: write the same pipe on one line (or end lines with a backtick
-instead of `\`). The script still writes nothing and exits 1 when the command printed an error or no
+instead of `\`). Windows PowerShell 5.1 has no `&&` either: run the `--check` first and start the pipe
+only if `$LASTEXITCODE` is `0` (`if ($LASTEXITCODE -eq 0) { ... }`). The script still writes nothing and exits 1 when the command printed an error or no
 JSON, so success is its `stored KEY in FILE` line. Read the ID you need afterwards with `list` (keys, webhooks) or `view` (voice
 profiles), never from the secret. When the secret belongs in a deployed secret manager, the person moves
 it there from the env file; don't print it to do so.
