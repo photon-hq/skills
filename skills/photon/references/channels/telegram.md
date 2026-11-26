@@ -15,7 +15,8 @@ Part of the Photon 2.0 skill. The overview of every channel, with costs, is in [
     pass `operation.detail.setupUrl` to the person. Without `--no-wait` the command waits for the bot and
     prints the link only on stderr. MCP: `connectTelegramBot`.
 - Check progress with `photon project platform telegram list --project <id> --json` (connected bots and
-  setups in progress) and `telegram view <pho_res_...>` (the bot's name, username, link and any
+  setups in progress; with `platforms:write`, a setup in progress still carries `detail.setupUrl`, so keep
+  that output out of files and logs too) and `telegram view <pho_res_...>` (the bot's name, username, link and any
   `connectionIssue`). A project has one setup at a time: running `connect` again continues it and prints
   the same link. To start over, `photon project platform operation cancel <pho_opr_...> --yes`, then
   connect again.

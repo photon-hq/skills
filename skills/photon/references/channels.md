@@ -32,8 +32,10 @@ Look the price up and say it before asking for a yes. Sources, all read-only:
 - Resources: [Billing](https://photon.codes/docs/beta/billing.md). A dedicated iMessage line is $250 per
   line per month (Business, up to 50 per project); a US local number $2 a month; a 10DLC campaign $15 a
   month from activation plus $20 per registration submission, resubmissions included and non-refundable.
-- Per-message usage: SMS, MMS, voice and email are billed per use beyond the plan's allowance; iMessage,
-  WhatsApp and Telegram sends have no per-message fee.
+- Per-message usage: SMS, MMS, US/Canada voice and email are billed per use beyond the plan's allowance.
+  SMS and MMS carrier fees are charged at cost on every message, included parts too, and international
+  voice minutes are always billed, outside the allowance. iMessage, WhatsApp and Telegram sends have no
+  per-message fee.
 - The project's own state: `photon project billing overview --project <id> --json`, or MCP
   `getBillingOverview`, `listBillingPlans`, `previewProjectChange` (what a plan change would cost), and
   `getTenDlcCampaignFees` (10DLC fees for the organization).

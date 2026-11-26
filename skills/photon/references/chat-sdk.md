@@ -34,7 +34,9 @@ subscriptions, deduplication and the WebSocket resume cursor; in-memory state is
 | `REDIS_URL` | read by `createRedisState()`, not the adapter | Required. A reachable Redis, such as `redis://localhost:6379` or a hosted Redis URL |
 
 Values come from the server environment or secret manager. For local development the docs use a gitignored
-`.env.local`. Write the key and webhook secret into it only through the pipe in
+`.env.local`. Next.js loads it; a standalone Node.js gateway doesn't, and `createPhotonAdapter()` then
+throws for the missing key: load it before the bot is imported, for example `node --env-file=.env.local`
+(Node.js 20.6 or newer). Write the key and webhook secret into it only through the pipe in
 [cli.md](cli.md#commands-that-print-a-secret), after the user's yes, or let the person paste them in.
 
 ### The bot

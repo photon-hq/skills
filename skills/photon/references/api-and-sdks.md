@@ -262,7 +262,9 @@ before every send.
 - A shared iMessage line can't start a conversation: the person texts first. A new iMessage chat needs a
   project-owned dedicated line as the first participant.
 - Participant counts: iMessage 2 to 1,000, WhatsApp and WhatsApp Business exactly 2, email 1 to 51, SMS
-  2 to 9. Every Space needs an Agent the project owns (`422 SPACE_REQUIRES_OWNED_AGENT` otherwise).
+  2 to 9. Every Space needs an Agent the project owns (`422 SPACE_REQUIRES_OWNED_AGENT` otherwise). The
+  one exception: a direct iMessage Space with a shared-line Agent whose peer has an active assignment of
+  this project on that line.
 - The Space's idempotency key binds the project, platform and participants for 24 hours; reuse it only for
   the same participants.
 
@@ -365,7 +367,9 @@ do {
 [Retries, timeouts, and idempotency](https://photon.codes/docs/beta/api-client/retries-and-timeouts.md)
 
 - The clients retry `GET` requests and requests carrying an idempotency key, on `408`, `429`, `502`, `503`
-  and `504`, up to 3 attempts, honoring `Retry-After` up to 60 seconds. `500` is not retried.
+  and `504`, up to 3 attempts, honoring `Retry-After` up to 60 seconds. `500` is not retried. Rust and Go
+  retry an upload only when its body can be sent again: Go buffers a one-shot reader up to 8 MiB and sends
+  a larger one once, so pass an `*os.File` or another `io.ReaderAt` plus `io.Seeker` to keep retries.
 - Timeouts apply within each attempt. TypeScript and Rust default to 30 seconds per attempt; Python's 30
   seconds apply separately to connecting, writing, reading and waiting for a pooled connection. The Go
   client sets no timeout: pass a `context.WithTimeout` to each call.

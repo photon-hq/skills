@@ -125,7 +125,7 @@ photon project platform imessage purchase --idempotency-key <key> --yes         
 photon project platform email connect <domain> --no-wait --no-browser   # DNS records in operation.detail.dnsRecords
 photon project platform email dns <pho_opr_...>
 photon project platform email disconnect <pho_res_...> --yes
-photon project platform telegram list|view [<pho_res_...>]
+photon project platform telegram list|view [<pho_res_...>]               # list shows a pending setup link
 photon project platform telegram connect --no-wait --no-browser          # setup link: see channels/telegram.md
 photon project platform telegram disconnect <pho_res_...> --yes
 photon project platform whatsapp-business number add --source byon|photon ... --no-browser   # see channels/whatsapp-business.md
@@ -207,8 +207,13 @@ photon project webhook create --project <pho_prj_...> --name my-agent --url http
   | node <this skill>/scripts/store-secret.mjs --field signingSecret --key PHOTON_WEBHOOK_SECRET --file .env.local
 ```
 
-The script prints only `stored KEY in FILE` and refuses a file that is a symbolic link, tracked by Git, or
-not ignored by Git. Read the ID you need afterwards with `list` (keys, webhooks) or `view` (voice
+Before the command, run `node <this skill>/scripts/store-secret.mjs --check --file .env.local`: a refusal
+after the command has printed would lose the secret. The script prints only `stored KEY in FILE` and
+refuses a file that is a symbolic link, tracked by Git, or not ignored by Git, or when Git can't tell.
+
+PowerShell has no `set -o pipefail`: write the same pipe on one line (or end lines with a backtick
+instead of `\`). The script still writes nothing and exits 1 when the command printed an error or no
+JSON, so success is its `stored KEY in FILE` line. Read the ID you need afterwards with `list` (keys, webhooks) or `view` (voice
 profiles), never from the secret. When the secret belongs in a deployed secret manager, the person moves
 it there from the env file; don't print it to do so.
 
@@ -226,7 +231,9 @@ photon operation replay <local-id> --yes --json    # finish or re-read the same 
 If a secret-producing command's output never reached the file, look for its record with
 `photon operation list --status awaiting-output-ack --json`. Its replay prints the secret again, under
 `result`: pipe it into the same `store-secret.mjs` command (the script reads `result.<field>` too).
-Without a record the secret is gone: revoke or rotate it and make a new one, after asking. With `PHOTON_API_TOKEN` there is no
+A Voice outbound replay can answer `password: null` (the script then writes nothing): the change was made
+but the password can't be shown again, so rotate with a new idempotency key, after asking. Without a
+record the secret is gone: revoke or rotate it and make a new one, after asking. With `PHOTON_API_TOKEN` there is no
 journal: pass your own `--idempotency-key` on every write that takes one, keep it until the result is
 known, and repeat a failed write with the same key and input.
 

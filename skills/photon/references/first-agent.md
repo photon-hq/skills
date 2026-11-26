@@ -3,10 +3,12 @@
 The end-to-end job: a person texts the agent's number, the agent receives the message, and the person
 gets a reply. Do the setup yourself; don't hand the user a tutorial. Ask only when the user's input is
 really needed (which organization or project, the test sender's handle, approving the sign-in, any yes
-for a purchase, key or send). If the user only asked to set Photon up or sign in, stop after step 4.
+for a purchase, key or send). If the user only asked to sign in, stop after step 3; if they asked only to
+set Photon up, stop after step 4.
 
 This page uses iMessage, the channel most users start with. For another channel, swap step 5 for that
-channel's file listed in [channels.md](channels.md) and keep the rest.
+channel's file listed in [channels.md](channels.md), and in steps 8 to 10 use that channel instead of
+iMessage: its platform name in the filter, its agent handle, and its own way to send the test message.
 
 ## Contents
 
@@ -51,7 +53,9 @@ create and what (if anything) costs money, then run it without asking again for 
   ([Installation](https://photon.codes/docs/beta/cli/installation.md)). A global install changes the
   user's machine: ask first.
 
-Then `photon --help`. Don't assume a flag exists: check `photon <command> --help`.
+Then `photon --help`. Don't assume a flag exists: check `photon <command> --help`. Storing a secret
+(steps 6 and 8) runs `scripts/store-secret.mjs` with Node.js 18 or newer. Without Node.js, ask before
+installing it, or let the person create the key in the dashboard (step 6).
 
 ## 3. Sign in
 
@@ -150,7 +154,11 @@ The agent's code uses a project API key with `project:read` and `project:write`,
   project:read and project:write, expiring on <date 90 days out>? It goes straight into .env.local and I
   won't display it." A yes to anything earlier doesn't cover this.
 - Before it is written: the env file must be in `.gitignore`, not tracked by Git, and not a symbolic link.
-  The script checks this and refuses otherwise; add the file to `.gitignore` first.
+  Add it to `.gitignore` first, then check before creating anything:
+  `node <this skill>/scripts/store-secret.mjs --check --file .env.local`.
+
+Only when a new key is needed and the user said yes (on PowerShell, see
+[cli.md](cli.md#commands-that-print-a-secret)):
 
 ```sh
 set -o pipefail
@@ -230,6 +238,10 @@ public HTTPS URL, ask before creating the destination, and pipe its secret into 
 ([events.md](events.md#create-a-destination)).
 
 ## 9. Validate and start
+
+Every reply the agent sends is a send. Before starting it, tell the user who it will answer (the test
+sender in shared mode, anyone who texts the line in dedicated mode) and what it replies, and get a yes;
+that yes covers the agent's automatic replies under that filter, the test included.
 
 Install dependencies with the repository's package manager and run its type check, lint, build or tests.
 Fix what the setup broke; report pre-existing failures separately. Before starting, all of these hold:

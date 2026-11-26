@@ -18,7 +18,9 @@ exactly what is left and why.
 If you are a hosted assistant without a shell (a chat app, a web agent), don't pretend to run anything.
 Give the user these steps to do themselves, or to paste into a coding agent that has a terminal:
 
-1. Install Photon CLI 3: `npm install --global @photon-ai/cli` (Node.js 22 or newer).
+1. Install Photon CLI 3: `npm install --global @photon-ai/cli` (Node.js 22 or newer). If
+   `photon --version` already prints 2.x or lower, that is Photon CLI 1.0 and this replaces it; to keep
+   it, run 3 without installing it instead: `npx -y @photon-ai/cli@latest <command>`.
 2. Sign in: `photon login`, then approve in the browser.
 3. Open https://photon.codes/docs/beta/get-started/project and follow it for their project.
 

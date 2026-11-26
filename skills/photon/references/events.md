@@ -5,7 +5,7 @@ event JSON for the same event and API version.
 
 | Use | When |
 | --- | --- |
-| [Webhook](https://photon.codes/docs/beta/message-delivery/webhook.md) | A backend that accepts public HTTPS `POST`s; serverless hosts; when no event may be lost |
+| [Webhook](https://photon.codes/docs/beta/message-delivery/webhook.md) | A backend that accepts public HTTPS `POST`s; serverless hosts; when losing events is costly (retried for up to four days, see below) |
 | [WebSocket](https://photon.codes/docs/beta/message-delivery/websocket.md) (Socket.IO) | No public endpoint: local development, long-running workers |
 
 Neither confirms that a message reached its recipient, and neither sends chat messages. Replies go
@@ -47,7 +47,8 @@ Ask the user first: a destination is a change, and its `whsec_...` signing secre
 1. Check the payload version is offered and has the event:
    `photon project webhook api-version list --project <id> --json` (`2026-07-01` with
    `"selectable": true`), then `photon project webhook event-type list --api-version 2026-07-01 ...`.
-2. Get the public HTTPS URL of the route from the user or the repository.
+2. Get the public HTTPS URL of the route from the user or the repository, and check the env file can
+   hold the secret: `node <this skill>/scripts/store-secret.mjs --check --file .env.local`.
 3. After the yes, create it and pipe the secret straight into the env file
    ([store-secret.mjs](../scripts/store-secret.mjs); [cli.md](cli.md#commands-that-print-a-secret)):
 
@@ -59,6 +60,9 @@ Ask the user first: a destination is a change, and its `whsec_...` signing secre
    ```
 
 4. Check it with `photon project webhook list --project <id> --json` (the destination is `enabled`).
+
+If the destination was created but the secret never reached the file, replay its record
+([cli.md](cli.md#recoverable-operations)); without one, rotate the secret (ask first) and store the new one.
 
 The dashboard's project **Webhooks** page does the same; the person copies the secret into the server's
 secret store themselves. The API also has
@@ -120,7 +124,9 @@ export async function POST(request: Request): Promise<Response> {
 - Save the verified event durably, then return any `2xx` (an empty `204` is enough). Queue slow work. Save
   the event ID and its work atomically, and return `2xx` again for a duplicate you already accepted.
 - Photon retries on `404`, `408`, `429`, `5xx`, timeouts and connection failures, for up to four days or 20
-  failed attempts, then disables the destination. `410 Gone` disables it at once. Other `4xx` and any
+  failed attempts, then disables the destination, and later events are not delivered to it. `410 Gone`
+  disables it at once. If losing an event matters, watch for failed deliveries and a disabled destination,
+  and reconcile with `listMessages`. Other `4xx` and any
   redirect stop that delivery without retry.
 - Order holds only within one destination and one event type.
 - Normal deliveries time out after 20 seconds. Events that ask for a synchronous response get two
@@ -130,7 +136,9 @@ export async function POST(request: Request): Promise<Response> {
   `retryWebhookDelivery` (with the `eventId`) asks for an immediate attempt of a delivery still waiting.
 - Rotating the signing secret (`photon project webhook rotate-secret`, ask first) prints the new one once:
   pipe it into `store-secret.mjs` like `create`. The old secret keeps working for `--overlap-seconds`
-  (default 86400).
+  (default 86400). A running receiver keeps the secret it started with: put the new one in the deployed
+  secret store and restart or redeploy the receiver before the overlap ends, or its deliveries fail with
+  `400` and are not retried.
 
 ## WebSocket stream (Socket.IO)
 
@@ -214,9 +222,11 @@ Rules:
 - Until the first event is handled and its cursor saved, there is no checkpoint: starting with `0`
   delivers only new events, and anything sent before the first acknowledgement is never delivered over
   the stream ([Client examples](https://photon.codes/docs/beta/websocket/example.md#checkpointed-examples)).
+  A failure, disconnect or full queue in that window reconnects with `0` and starts live again, so the
+  events in flight are not replayed: log it and read them with `listMessages`.
 - Replay is kept for 7 days. After a longer gap older events are gone and nothing signals it: if the saved
-  cursor is older than that at startup, log it and read missed messages with `listMessages`. If no event
-  may be lost, use a webhook, which Photon retries for up to four days.
+  cursor is older than that at startup, log it and read missed messages with `listMessages`. If losing
+  events is costly, use a webhook, which Photon retries for up to four days.
 - Socket.IO reconnects on its own; don't add a second retry loop. A refused connection arrives as
   `connect_error` with no status or code (a bad key and a key for another project look the same): find the
   cause with [debugging.md](debugging.md#the-event-stream-doesnt-connect) instead of retrying in a loop.
