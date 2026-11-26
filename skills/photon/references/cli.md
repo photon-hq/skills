@@ -207,7 +207,8 @@ photon project webhook create --project <pho_prj_...> --name my-agent --url http
   | node <this skill>/scripts/store-secret.mjs --field signingSecret --key PHOTON_WEBHOOK_SECRET --file .env.local
 ```
 
-Before the command, run `node <this skill>/scripts/store-secret.mjs --check --file .env.local`: a refusal
+Before the command, run `node <this skill>/scripts/store-secret.mjs --check --file .env.local` and go on only
+if it succeeds (chain them with `&&`): a refusal
 after the command has printed would lose the secret. The script prints only `stored KEY in FILE` and
 refuses a file that is a symbolic link, tracked by Git, or not ignored by Git, or when Git can't tell.
 

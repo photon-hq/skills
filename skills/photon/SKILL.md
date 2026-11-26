@@ -119,8 +119,8 @@ these yourself, but only after the user says yes to that exact key or destinatio
 Check the env file first, so a refusal doesn't cost the secret:
 
 ```sh
-node <this skill>/scripts/store-secret.mjs --check --file .env.local
 set -o pipefail
+node <this skill>/scripts/store-secret.mjs --check --file .env.local &&
 photon project api-key create --project <pho_prj_...> --name my-agent \
   --permission project:read --permission project:write \
   --expires-at <RFC 3339 time> --json \
